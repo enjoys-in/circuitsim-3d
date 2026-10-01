@@ -13,6 +13,7 @@ from app.api.v1.routes import (
     realtime,
     realtime_ws,
     simulation,
+    vendor,
 )
 
 api_router = APIRouter()
@@ -21,6 +22,7 @@ api_router.include_router(agent.router)
 api_router.include_router(assistant.router)
 api_router.include_router(components.router)
 api_router.include_router(firmware.router)
+api_router.include_router(vendor.router)
 api_router.include_router(projects.router)
 api_router.include_router(simulation.router)
 api_router.include_router(realtime.router)

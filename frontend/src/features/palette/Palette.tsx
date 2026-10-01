@@ -6,6 +6,7 @@ import { useCatalog } from "../catalog/CatalogContext";
 import { CustomComponentsSection } from "../custom/CustomComponentsSection";
 import { CommonPartsGroup } from "../presets/CommonPartsGroup";
 import { MyPartsGroup } from "../presets/MyPartsGroup";
+import { VendorSheet } from "../vendor/VendorSheet";
 import { groupComponents } from "./groupComponents";
 import { PaletteGroup } from "./PaletteGroup";
 import { PaletteSkeleton } from "./PaletteSkeleton";
@@ -16,6 +17,7 @@ const STORAGE_KEY = "circuitsim.palette.open";
 export function Palette() {
   const { components, status, error, reload } = useCatalog();
   const [query, setQuery] = useState("");
+  const [storeOpen, setStoreOpen] = useState(false);
   const [openMap, setOpenMap] = usePersistentState<Record<string, boolean>>(STORAGE_KEY, {});
   const deferredQuery = useDeferredValue(query);
   const searching = deferredQuery.trim().length > 0;
@@ -36,7 +38,11 @@ export function Palette() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button type="button" className="palette__store" onClick={() => setStoreOpen(true)} title="Browse & import parts from the store catalog">
+          + Import from store
+        </button>
       </div>
+      <VendorSheet open={storeOpen} onClose={() => setStoreOpen(false)} />
 
       {status === "pending" && <PaletteSkeleton />}
       {status === "error" && (
