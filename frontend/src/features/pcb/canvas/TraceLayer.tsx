@@ -8,6 +8,7 @@ interface Props {
   vias: Via[];
   visible: Record<Layer, boolean>;
   selectedTraceId: string | null;
+  highlightNet: string | null;
   onTracePointerDown: (e: PointerEvent, id: string) => void;
   onTraceContextMenu: (e: MouseEvent, id: string) => void;
   onViaContextMenu: (e: MouseEvent, id: string) => void;
@@ -18,16 +19,22 @@ function TraceLayerImpl({
   vias,
   visible,
   selectedTraceId,
+  highlightNet,
   onTracePointerDown,
   onTraceContextMenu,
   onViaContextMenu,
 }: Props) {
+  const traceClass = (trace: Trace): string => {
+    if (selectedTraceId === trace.id) return "trace trace--selected";
+    if (highlightNet === null) return "trace";
+    return trace.netId === highlightNet ? "trace trace--highlight" : "trace trace--dim";
+  };
   return (
     <g className="traces">
       {traces
         .filter((trace) => visible[trace.layer])
         .map((trace) => (
-          <g key={trace.id} className={selectedTraceId === trace.id ? "trace trace--selected" : "trace"}>
+          <g key={trace.id} className={traceClass(trace)}>
             <path
               d={polyline(trace.points)}
               stroke={LAYER_COLOR[trace.layer]}

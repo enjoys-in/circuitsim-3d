@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { snapPoint } from "./model/geometry";
+import { planRoutes } from "./model/autoroute";
 import type { Airwire, Layer, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
 import { DEFAULT_TRACE_WIDTH, otherLayer } from "./model/pcbTypes";
 
@@ -19,10 +20,12 @@ export interface RoutingController {
   traceWidth: number;
   visible: Record<Layer, boolean>;
   selectedTraceId: string | null;
+  highlightedNetId: string | null;
   setActiveLayer: (layer: Layer) => void;
   setTraceWidth: (width: number) => void;
   toggleVisible: (layer: Layer) => void;
   selectTrace: (id: string | null) => void;
+  highlightNet: (netId: string | null) => void;
   setTraceEndpoints: (updates: TraceEndpointUpdate[]) => void;
   begin: (netId: string, point: Point, from: string) => void;
   extend: (point: Point) => void;
@@ -43,6 +46,7 @@ export function useRouting(): RoutingController {
   const [traceWidth, setTraceWidth] = useState(DEFAULT_TRACE_WIDTH);
   const [visible, setVisible] = useState<Record<Layer, boolean>>({ top: true, bottom: true });
   const [selectedTraceId, selectTrace] = useState<string | null>(null);
+  const [highlightedNetId, highlightNet] = useState<string | null>(null);
 
   const commit = useCallback((session: RoutingSession, points: Point[]) => {
     if (points.length < 2) return;
@@ -61,10 +65,12 @@ export function useRouting(): RoutingController {
       traceWidth,
       visible,
       selectedTraceId,
+      highlightedNetId,
       setActiveLayer,
       setTraceWidth,
       toggleVisible: (layer) => setVisible((v) => ({ ...v, [layer]: !v[layer] })),
       selectTrace,
+      highlightNet,
       // Move specific trace endpoints so copper follows a dragged/rotated part.
       setTraceEndpoints: (updates) =>
         setTraces((prev) => {
@@ -109,19 +115,19 @@ export function useRouting(): RoutingController {
         return ok;
       },
       abort: () => setRouting(null),
-      // Lay an L-shaped copper trace for every remaining pin-to-pin connection.
-      // Alternate layers so crossing traces land on different copper (no shorts).
+      // Lay copper for every remaining pin-to-pin connection. A greedy planner picks
+      // each trace's elbow + layer to cross the fewest other nets, minimising shorts.
       autoRoute: (airwires) => {
         if (airwires.length === 0) return;
-        const other = otherLayer(activeLayer);
+        const planned = planRoutes(airwires, activeLayer, traces);
         setTraces((prev) => [
           ...prev,
-          ...airwires.map((aw, i) => ({
+          ...planned.map((pt) => ({
             id: uid("t"),
-            netId: aw.netId,
-            layer: i % 2 === 0 ? activeLayer : other,
+            netId: pt.netId,
+            layer: pt.layer,
             width: traceWidth,
-            points: [aw.a, { x: aw.b.x, y: aw.a.y }, aw.b],
+            points: pt.points,
           })),
         ]);
       },
@@ -133,6 +139,6 @@ export function useRouting(): RoutingController {
         setRouting(null);
       },
     }),
-    [traces, vias, routing, activeLayer, traceWidth, visible, selectedTraceId, commit],
+    [traces, vias, routing, activeLayer, traceWidth, visible, selectedTraceId, highlightedNetId, commit],
   );
 }

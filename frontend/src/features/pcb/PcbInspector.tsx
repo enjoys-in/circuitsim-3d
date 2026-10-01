@@ -24,6 +24,7 @@ export function PcbInspector() {
     .filter((n) => !n.id.startsWith("bb:"))
     .map((n) => ({
       id: n.id,
+      netId: n.endpoints.map((ep) => netOf.get(ep)).find((v): v is string => Boolean(v)) ?? null,
       pins: n.endpoints.map((ep) => {
         const [iid, pin] = ep.split(":");
         return { label: labelOf.get(iid) ?? iid, pin: pin ?? "" };
@@ -191,14 +192,22 @@ export function PcbInspector() {
         ) : (
           <ul className="pcb-net-list">
             {connections.map((net) => (
-              <li key={net.id} className="pcb-net">
-                {net.pins.map((p, i) => (
-                  <span key={i} className="pcb-net__pin">
-                    {i > 0 && <span className="pcb-net__sep">↔</span>}
-                    <b>{p.label}</b>
-                    <span className="pcb-net__dot">.{p.pin}</span>
-                  </span>
-                ))}
+              <li key={net.id}>
+                <button
+                  type="button"
+                  className={cx("pcb-net", pcb.highlightedNetId === net.netId && net.netId && "pcb-net--active")}
+                  onClick={() => pcb.highlightNet(pcb.highlightedNetId === net.netId ? null : net.netId)}
+                  disabled={!net.netId}
+                  title="Highlight this net on the board"
+                >
+                  {net.pins.map((p, i) => (
+                    <span key={i} className="pcb-net__pin">
+                      {i > 0 && <span className="pcb-net__sep">↔</span>}
+                      <b>{p.label}</b>
+                      <span className="pcb-net__dot">.{p.pin}</span>
+                    </span>
+                  ))}
+                </button>
               </li>
             ))}
           </ul>

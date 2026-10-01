@@ -3,11 +3,28 @@ import { constrain45, polyline } from "../model/geometry";
 import type { Airwire, DrcViolation, Point, RoutingSession } from "../model/pcbTypes";
 import { LAYER_COLOR } from "../model/pcbTypes";
 
-export const Ratsnest = memo(function Ratsnest({ airwires }: { airwires: Airwire[] }) {
+export const Ratsnest = memo(function Ratsnest({
+  airwires,
+  highlightNet,
+}: {
+  airwires: Airwire[];
+  highlightNet: string | null;
+}) {
   return (
     <g className="ratsnest">
       {airwires.map((wire, i) => (
-        <line key={i} x1={wire.a.x} y1={wire.a.y} x2={wire.b.x} y2={wire.b.y} className="ratsnest__wire" />
+        <line
+          key={i}
+          x1={wire.a.x}
+          y1={wire.a.y}
+          x2={wire.b.x}
+          y2={wire.b.y}
+          className={
+            highlightNet && wire.netId === highlightNet
+              ? "ratsnest__wire ratsnest__wire--hot"
+              : "ratsnest__wire"
+          }
+        />
       ))}
     </g>
   );

@@ -57,7 +57,7 @@ export function PcbCanvas({ render }: { render: PcbRenderMode }) {
     return map;
   }, [pcb.pads]);
 
-  const highlightNet = pcb.routing?.netId ?? null;
+  const highlightNet = pcb.highlightedNetId ?? pcb.routing?.netId ?? null;
 
   const selectedFootprint = (() => {
     const id = pcb.selectedId;
@@ -97,6 +97,7 @@ export function PcbCanvas({ render }: { render: PcbRenderMode }) {
         vias={pcb.vias}
         visible={pcb.visible}
         selectedTraceId={pcb.selectedTraceId}
+        highlightNet={highlightNet}
         onTracePointerDown={interaction.onTracePointerDown}
         onTraceContextMenu={interaction.onTraceContextMenu}
         onViaContextMenu={interaction.onViaContextMenu}
@@ -136,7 +137,7 @@ export function PcbCanvas({ render }: { render: PcbRenderMode }) {
         />
       )}
 
-      <Ratsnest airwires={pcb.connectivity.airwires} />
+      <Ratsnest airwires={pcb.connectivity.airwires} highlightNet={highlightNet} />
       {pcb.routing && <RoutePreview routing={pcb.routing} cursor={interaction.cursor} />}
       <DrcMarkers violations={pcb.drc} />
     </svg>

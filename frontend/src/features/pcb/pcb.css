@@ -138,6 +138,14 @@
   stroke: #fbbf24;
 }
 
+.trace--highlight .trace__copper {
+  filter: drop-shadow(0 0 3px rgba(253, 224, 71, 0.95));
+}
+
+.trace--dim .trace__copper {
+  opacity: 0.18;
+}
+
 .via__ring {
   fill: #cbd5e1;
   stroke: #64748b;
@@ -154,6 +162,12 @@
   stroke-dasharray: 3 3;
   opacity: 0.8;
   pointer-events: none;
+}
+
+.ratsnest__wire--hot {
+  stroke: #fbbf24;
+  stroke-width: 1.4;
+  opacity: 1;
 }
 
 .route-preview__laid {
@@ -559,11 +573,31 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  width: 100%;
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--panel-2);
   font-size: 12px;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+
+.pcb-net:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.pcb-net--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel-2));
+}
+
+.pcb-net:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .pcb-net__pin {
