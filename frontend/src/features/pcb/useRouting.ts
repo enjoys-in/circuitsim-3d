@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { snapPoint } from "./model/geometry";
 import { planRoutes } from "./model/autoroute";
-import type { Airwire, Layer, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
+import type { Airwire, Layer, Obstacle, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
 import { DEFAULT_TRACE_WIDTH, otherLayer } from "./model/pcbTypes";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
@@ -33,7 +33,7 @@ export interface RoutingController {
   via: (point: Point) => void;
   end: (point: Point, netId?: string | null) => boolean;
   abort: () => void;
-  autoRoute: (airwires: Airwire[]) => void;
+  autoRoute: (airwires: Airwire[], obstacles?: Obstacle[]) => void;
   deleteTrace: (id: string) => void;
   deleteVia: (id: string) => void;
   clearRoutes: () => void;
@@ -118,9 +118,9 @@ export function useRouting(): RoutingController {
       abort: () => setRouting(null),
       // Lay copper for every remaining pin-to-pin connection. A greedy planner picks
       // each trace's elbow + layer (and drops a via to hop layers) to minimise shorts.
-      autoRoute: (airwires) => {
+      autoRoute: (airwires, obstacles) => {
         if (airwires.length === 0) return;
-        const plan = planRoutes(airwires, activeLayer, traces);
+        const plan = planRoutes(airwires, activeLayer, traces, obstacles ?? []);
         setTraces((prev) => [
           ...prev,
           ...plan.traces.map((pt) => ({

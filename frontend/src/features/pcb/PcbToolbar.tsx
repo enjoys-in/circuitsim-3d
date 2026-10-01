@@ -100,7 +100,7 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
           size="sm"
           variant="primary"
           disabled={pcb.connectivity.airwires.length === 0}
-          onClick={() => pcb.autoRoute(pcb.connectivity.airwires)}
+          onClick={() => pcb.autoRoute(pcb.connectivity.airwires, pcb.obstacles)}
           title="Lay copper for every unrouted pin connection"
         >
           Auto-route

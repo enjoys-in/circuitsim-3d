@@ -72,6 +72,15 @@ export interface Airwire {
   b: Point;
 }
 
+// Axis-aligned bounding box of a component body, used so the router can detour around
+// parts instead of laying copper straight under them.
+export interface Obstacle {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export interface DrcViolation {
   id: string;
   kind: "clearance" | "short" | "unrouted" | "overlap";

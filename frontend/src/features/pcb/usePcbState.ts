@@ -4,7 +4,7 @@ import { runDrc } from "./model/drc";
 import { getFootprint } from "./model/footprints";
 import { distance, padWorld } from "./model/geometry";
 import { analyzeNets, collectPads, type Connectivity, type PadInfo } from "./model/nets";
-import type { Placement } from "./model/pcbTypes";
+import type { Obstacle, Placement } from "./model/pcbTypes";
 import { otherLayer } from "./model/pcbTypes";
 import type { DrcViolation } from "./model/pcbTypes";
 import { usePlacements, type PlacementController } from "./usePlacements";
@@ -17,6 +17,7 @@ export interface PcbState extends PlacementController, RoutingController {
   connectivity: Connectivity;
   drc: DrcViolation[];
   netCount: number;
+  obstacles: Obstacle[];
 }
 
 export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, ComponentDef>): PcbState {
@@ -37,6 +38,24 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
     () => new Set(pads.map((p) => p.netId).filter(Boolean)).size,
     [pads],
   );
+
+  // Component body boxes (rotation-aware AABB) so the auto-router can detour around parts.
+  const obstacles = useMemo<Obstacle[]>(() => {
+    const boxes: Obstacle[] = [];
+    for (const inst of circuit.instances) {
+      const def = catalog.get(inst.component_key);
+      const place = placement.placements.get(inst.id);
+      if (!def || !place) continue;
+      const fp = getFootprint(def);
+      const w = place.bodyW ?? fp.width;
+      const h = place.bodyH ?? fp.height;
+      const rad = (place.rotation * Math.PI) / 180;
+      const hw = (Math.abs(w * Math.cos(rad)) + Math.abs(h * Math.sin(rad))) / 2;
+      const hh = (Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad))) / 2;
+      boxes.push({ minX: place.x - hw, maxX: place.x + hw, minY: place.y - hh, maxY: place.y + hh });
+    }
+    return boxes;
+  }, [circuit, catalog, placement.placements]);
 
   const drc = useMemo(
     () => runDrc(routing.traces, placement.board, connectivity.routedNets, netCount),
@@ -88,7 +107,7 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
   );
 
   return useMemo(
-    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount }),
-    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount],
+    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles }),
+    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles],
   );
 }
