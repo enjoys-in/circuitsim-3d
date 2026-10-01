@@ -11,6 +11,8 @@ export interface ComponentInstance {
   label: string;
   position: Position;
   params: Params;
+  rotation?: number;
+  flip?: boolean;
 }
 
 export interface Net {

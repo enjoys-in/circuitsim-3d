@@ -12,7 +12,17 @@ export function circuitToGraph(
   const nodes = circuit.instances.flatMap((inst) => {
     const def = defs.get(inst.id);
     if (!def) return [];
-    return [createPartNode({ id: inst.id, def, position: inst.position, label: inst.label, params: inst.params })];
+    return [
+      createPartNode({
+        id: inst.id,
+        def,
+        position: inst.position,
+        label: inst.label,
+        params: inst.params,
+        rotation: inst.rotation,
+        flip: inst.flip,
+      }),
+    ];
   });
 
   const edges = circuit.nets.flatMap((net, index) => {

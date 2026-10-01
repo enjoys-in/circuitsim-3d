@@ -11,7 +11,7 @@ import { describeParams } from "./paramSchema";
 
 export function NodeInspector({ node }: { node: PartNodeType }) {
   const { def, label, params } = node.data;
-  const { updateParams, setLabel, removeNode } = useCircuitActions();
+  const { updateParams, setLabel, removeNode, rotateNode, flipNode } = useCircuitActions();
   const { addPreset } = usePresets();
   const state = useLiveInstance(node.id);
   const descriptors = useMemo(() => describeParams(def, params), [def, params]);
@@ -47,6 +47,14 @@ export function NodeInspector({ node }: { node: PartNodeType }) {
 
       <section className="inspector__section">
         <TextField label="Label" value={label} onCommit={(next) => setLabel(node.id, next.trim() || label)} />
+        <div className="inspector__orient">
+          <Button size="sm" onClick={() => rotateNode(node.id)} title="Rotate 90° (R)">
+            ⟳ Rotate
+          </Button>
+          <Button size="sm" onClick={() => flipNode(node.id)} title="Flip horizontally (F)">
+            ⇋ Flip
+          </Button>
+        </div>
         {descriptors.map((descriptor) => (
           <ParamEditor
             key={descriptor.key}

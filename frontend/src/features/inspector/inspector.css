@@ -94,6 +94,11 @@
   gap: 4px;
 }
 
+.inspector__orient {
+  display: flex;
+  gap: 8px;
+}
+
 .inspector__actions {
   display: flex;
   flex-direction: column;

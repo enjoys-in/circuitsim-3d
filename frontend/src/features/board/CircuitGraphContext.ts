@@ -23,6 +23,8 @@ export interface CircuitGraphValue {
 export interface CircuitActions {
   updateParams: (id: string, patch: Params) => void;
   setLabel: (id: string, label: string) => void;
+  rotateNode: (id: string) => void;
+  flipNode: (id: string) => void;
   interact: (id: string) => void;
   addPart: (def: ComponentDef, opts?: { params?: Params; label?: string; position?: Position }) => string;
   removeNode: (id: string) => void;

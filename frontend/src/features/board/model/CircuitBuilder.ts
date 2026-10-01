@@ -13,6 +13,8 @@ export class CircuitBuilder {
       label: node.data.label,
       position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
       params: node.data.params,
+      ...(node.data.rotation ? { rotation: node.data.rotation } : {}),
+      ...(node.data.flip ? { flip: true } : {}),
     }));
     return this;
   }

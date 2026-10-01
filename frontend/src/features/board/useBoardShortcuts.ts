@@ -9,10 +9,23 @@ export function useBoardShortcuts(pointer: RefObject<{ x: number; y: number }>):
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.matches("input, textarea, select")) return;
-      if (!(event.ctrlKey || event.metaKey)) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.matches?.("input, textarea, select")) return;
       const key = event.key.toLowerCase();
+      // Rotate / flip the selected part (no modifier, like the PCB editor).
+      if (!event.ctrlKey && !event.metaKey && selectedNodeId) {
+        if (key === "r") {
+          event.preventDefault();
+          actions.rotateNode(selectedNodeId);
+          return;
+        }
+        if (key === "f") {
+          event.preventDefault();
+          actions.flipNode(selectedNodeId);
+          return;
+        }
+      }
+      if (!(event.ctrlKey || event.metaKey)) return;
       if (key === "d" && selectedNodeId) {
         event.preventDefault();
         actions.duplicateNode(selectedNodeId);

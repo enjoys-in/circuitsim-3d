@@ -91,6 +91,12 @@
   position: relative;
 }
 
+.part-node__rot {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+}
+
 .part-node__art {
   position: absolute;
   inset: 0;

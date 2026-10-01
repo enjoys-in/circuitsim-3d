@@ -60,6 +60,8 @@ export function useGraphActions(
     () => ({
       updateParams: (id, patch: Params) => patchNode(id, (data) => ({ params: { ...data.params, ...patch } })),
       setLabel: (id, label) => patchNode(id, () => ({ label })),
+      rotateNode: (id) => patchNode(id, (data) => ({ rotation: ((data.rotation ?? 0) + 90) % 360 })),
+      flipNode: (id) => patchNode(id, (data) => ({ flip: !(data.flip ?? false) })),
       interact: (id) =>
         patchNode(id, (data) => {
           const interact = getPart(data.def).interact;

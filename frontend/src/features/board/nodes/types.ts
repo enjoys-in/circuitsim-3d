@@ -5,6 +5,8 @@ export interface PartNodeData extends Record<string, unknown> {
   def: ComponentDef;
   label: string;
   params: Params;
+  rotation?: number;
+  flip?: boolean;
 }
 
 export type PartNodeType = Node<PartNodeData, "part">;
