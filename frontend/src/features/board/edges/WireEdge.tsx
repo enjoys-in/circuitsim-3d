@@ -15,8 +15,24 @@ function describe(engine: string | null, value: number | null | undefined): { ac
   return { active: value > ENERGIZED_VOLTS, text: formatSI(value, "V") };
 }
 
-function polyline(points: Position[]): string {
-  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x},${p.y}`).join(" ");
+// Smooth curve through all points (Catmull-Rom -> cubic bezier), so joined wires bend
+// gently instead of making sharp corners.
+function smoothPath(points: Position[]): string {
+  if (points.length < 2) return "";
+  if (points.length === 2) return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+  let d = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+  }
+  return d;
 }
 
 // Distance from p to segment ab, so a new joint drops onto the nearest leg of the wire.
@@ -52,7 +68,7 @@ function WireEdgeImpl({
   let labelY: number;
   if (waypoints.length > 0) {
     const pts: Position[] = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
-    path = polyline(pts);
+    path = smoothPath(pts);
     const mid = pts[Math.floor(pts.length / 2)];
     labelX = mid.x;
     labelY = mid.y;
