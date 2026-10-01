@@ -34,9 +34,12 @@ const SYMBOL: Record<string, string> = {
   encoder4to2: "ENC",
   srff: "SR-FF",
   counter4: "CTR4",
+  counter8: "CTR8",
   shift8: "SHIFT8",
   register4: "REG4",
+  register8: "REG8",
   alu4: "ALU",
+  alu8: "ALU8",
   rom16: "ROM",
   ram16: "RAM",
 };
