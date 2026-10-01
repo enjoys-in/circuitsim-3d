@@ -16,6 +16,18 @@ real **three.js 3D** view — all in one app.
 
 ---
 
+## Screenshots
+
+| Workspace | Digital ALU | Waveforms |
+|-----------|-------------|-----------|
+| ![Workspace](docs/screenshots/01-workspace.png) | ![Digital ALU](docs/screenshots/02-digital-alu.png) | ![Waveforms](docs/screenshots/03-waveforms.png) |
+
+| ESP32 firmware | PCB editor |
+|----------------|------------|
+| ![ESP32 firmware](docs/screenshots/04-esp32-firmware.png) | ![PCB editor](docs/screenshots/05-pcb.png) |
+
+---
+
 ## Features
 
 ### Schematic & simulation
