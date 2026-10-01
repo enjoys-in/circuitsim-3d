@@ -67,15 +67,26 @@ export function Pcb3DScene() {
             </mesh>
           ))}
 
-          {pcb.traces.map((t) => (
-            <Line
-              key={t.id}
-              points={t.points.map(
-                (p) => [p.x - ox, THICK / 2 + PAD_H + 0.3, p.y - oz] as [number, number, number],
-              )}
-              color={t.layer === "top" ? "#e0533f" : "#3f7de0"}
-              lineWidth={2.5}
-            />
+          {pcb.traces
+            .filter((t) => pcb.visible[t.layer])
+            .map((t) => {
+              // Top copper sits above the board, bottom copper under it.
+              const y = t.layer === "top" ? THICK / 2 + PAD_H + 0.3 : -(THICK / 2 + PAD_H + 0.3);
+              return (
+                <Line
+                  key={t.id}
+                  points={t.points.map((p) => [p.x - ox, y, p.y - oz] as [number, number, number])}
+                  color={t.layer === "top" ? "#e0533f" : "#3f7de0"}
+                  lineWidth={2.5}
+                />
+              );
+            })}
+
+          {pcb.vias.map((v) => (
+            <mesh key={v.id} position={[v.x - ox, 0, v.y - oz]}>
+              <cylinderGeometry args={[2.2, 2.2, THICK + PAD_H * 2 + 1, 16]} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.4} />
+            </mesh>
           ))}
 
           {circuit.instances.map((inst) => {

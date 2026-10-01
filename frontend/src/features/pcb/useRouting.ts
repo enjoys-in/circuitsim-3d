@@ -116,13 +116,13 @@ export function useRouting(): RoutingController {
       },
       abort: () => setRouting(null),
       // Lay copper for every remaining pin-to-pin connection. A greedy planner picks
-      // each trace's elbow + layer to cross the fewest other nets, minimising shorts.
+      // each trace's elbow + layer (and drops a via to hop layers) to minimise shorts.
       autoRoute: (airwires) => {
         if (airwires.length === 0) return;
-        const planned = planRoutes(airwires, activeLayer, traces);
+        const plan = planRoutes(airwires, activeLayer, traces);
         setTraces((prev) => [
           ...prev,
-          ...planned.map((pt) => ({
+          ...plan.traces.map((pt) => ({
             id: uid("t"),
             netId: pt.netId,
             layer: pt.layer,
@@ -130,6 +130,12 @@ export function useRouting(): RoutingController {
             points: pt.points,
           })),
         ]);
+        if (plan.vias.length > 0) {
+          setVias((prev) => [
+            ...prev,
+            ...plan.vias.map((v) => ({ id: uid("v"), netId: v.netId, x: v.x, y: v.y })),
+          ]);
+        }
       },
       deleteTrace: (id) => setTraces((prev) => prev.filter((t) => t.id !== id)),
       deleteVia: (id) => setVias((prev) => prev.filter((v) => v.id !== id)),
