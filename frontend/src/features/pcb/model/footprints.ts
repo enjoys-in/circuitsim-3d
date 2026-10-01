@@ -1,10 +1,17 @@
 import type { ComponentDef, Pin } from "../../../domain";
+import { getPart } from "../../parts";
+import type { PartPin } from "../../parts";
 import { BREADBOARD_KEY, getBreadboardLayout } from "../../parts/library/breadboardModel";
 import type { Footprint, Pad, PadShape } from "./pcbTypes";
 
 const PITCH = 30;
 const ROW_GAP = 60;
 const MARGIN = 18;
+
+// The footprint is the part art projected into board space: pads sit exactly where the
+// art draws each pin, scaled uniformly so the art renders without distortion. The scale
+// turns the art's tight 16px header pitch into a comfortable through-hole pitch.
+const FOOTPRINT_SCALE = 1.6;
 
 function shapeFor(index: number, base: PadShape): Pad[][number]["shape"] {
   return index === 0 ? "rect" : base;
@@ -55,14 +62,45 @@ function boardFootprint(pins: Pin[]): Footprint {
   return pins.length > 6 ? dual(pins) : inline(pins);
 }
 
-export function buildFootprint(def: ComponentDef): Footprint {
-  if (def.key === BREADBOARD_KEY) return breadboardFootprint();
+// Generic layout used when the part art does not position every pin (keeps connectivity
+// for parts whose art and schematic pins disagree).
+function genericFootprint(def: ComponentDef): Footprint {
   if (def.pins.length === 0) return { width: 220, height: 140, pads: [], outline: "box" };
   if (def.pins.length === 2) return twoTerminal(def.pins);
   if (def.category === "logic") return dual(def.pins);
   if (def.category === "dev_board") return dual(def.pins);
   if (def.pins.length <= 3) return inline(def.pins);
   return boardFootprint(def.pins);
+}
+
+// Footprint whose pads coincide with the part art's drawn pins, so copper lines up with
+// the body in every orientation (a vertical board gets vertical pad columns, etc.).
+function footprintFromArt(def: ComponentDef, width: number, height: number, artPins: Map<string, PartPin>): Footprint {
+  const pads: Pad[] = def.pins.map((pin, i) => {
+    const art = artPins.get(pin.name)!;
+    return {
+      name: pin.name,
+      x: art.x * FOOTPRINT_SCALE,
+      y: art.y * FOOTPRINT_SCALE,
+      shape: shapeFor(i, "round"),
+    };
+  });
+  return { width: width * FOOTPRINT_SCALE, height: height * FOOTPRINT_SCALE, pads, outline: "box" };
+}
+
+export function buildFootprint(def: ComponentDef): Footprint {
+  if (def.key === BREADBOARD_KEY) return breadboardFootprint();
+
+  // Prefer the art's own pin geometry when it covers every pin — this keeps the pads
+  // aligned with the rendered body. Otherwise fall back to a generic grid.
+  if (def.pins.length > 0) {
+    const spec = getPart(def);
+    const artPins = new Map(spec.pins.map((p) => [p.name, p]));
+    if (def.pins.every((p) => artPins.has(p.name))) {
+      return footprintFromArt(def, spec.width, spec.height, artPins);
+    }
+  }
+  return genericFootprint(def);
 }
 
 // The breadboard carries no def.pins; derive its pad grid from the hole layout.

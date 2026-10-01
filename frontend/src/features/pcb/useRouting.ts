@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { snapPoint } from "./model/geometry";
 import { planRoutes } from "./model/autoroute";
 import type { Airwire, Layer, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
@@ -39,8 +40,8 @@ export interface RoutingController {
 }
 
 export function useRouting(): RoutingController {
-  const [traces, setTraces] = useState<Trace[]>([]);
-  const [vias, setVias] = useState<Via[]>([]);
+  const [traces, setTraces] = usePersistentState<Trace[]>("circuitsim.pcb.traces", []);
+  const [vias, setVias] = usePersistentState<Via[]>("circuitsim.pcb.vias", []);
   const [routing, setRouting] = useState<RoutingSession | null>(null);
   const [activeLayer, setActiveLayer] = useState<Layer>("top");
   const [traceWidth, setTraceWidth] = useState(DEFAULT_TRACE_WIDTH);

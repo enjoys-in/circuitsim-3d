@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   addEdge,
   useEdgesState,
@@ -7,11 +7,12 @@ import {
   type Connection,
   type OnSelectionChangeFunc,
 } from "@xyflow/react";
-import type { ComponentDef, Params } from "../../domain";
+import type { ComponentDef, Circuit, Params } from "../../domain";
 import { DRAG_MIME, PRESET_MIME } from "../../shared/constants";
 import { getPart } from "../parts";
 import type { CircuitGraphValue } from "./CircuitGraphContext";
 import { CircuitBuilder, electricalKey } from "./model/CircuitBuilder";
+import { circuitToGraph } from "./model/circuitToGraph";
 import { nextDesignator } from "./model/designators";
 import { createPartNode } from "./model/nodeFactory";
 import { pickWireColor } from "./model/wireColors";
@@ -19,6 +20,8 @@ import type { PartNodeType, WireEdgeType } from "./nodes/types";
 import { useGraphActions } from "./useGraphActions";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
+
+const CIRCUIT_STORAGE_KEY = "circuitsim.circuit";
 
 function readPreset(raw: string): { name: string; params: Params } | null {
   if (!raw) return null;
@@ -120,6 +123,37 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
 
   const circuit = useMemo(() => new CircuitBuilder().fromNodes(nodes).fromEdges(edges).build(), [nodes, edges]);
   const circuitKey = useMemo(() => electricalKey(circuit), [circuit]);
+
+  // Restore the last circuit once the catalog is ready, then keep saving it so a page
+  // refresh resumes the work instead of starting from a blank board.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || catalog.size === 0) return;
+    restored.current = true;
+    try {
+      const raw = window.localStorage.getItem(CIRCUIT_STORAGE_KEY);
+      const saved = raw ? (JSON.parse(raw) as Circuit) : null;
+      if (saved?.instances?.length) {
+        const graph = circuitToGraph(saved, catalog);
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
+      }
+    } catch {
+      /* corrupt storage — ignore */
+    }
+  }, [catalog, setNodes, setEdges]);
+
+  useEffect(() => {
+    if (!restored.current) return;
+    const timer = setTimeout(() => {
+      try {
+        window.localStorage.setItem(CIRCUIT_STORAGE_KEY, JSON.stringify(circuit));
+      } catch {
+        /* storage unavailable */
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [circuit]);
 
   const graph = useMemo<CircuitGraphValue>(
     () => ({

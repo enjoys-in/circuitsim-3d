@@ -1,9 +1,16 @@
 # CircuitSim
 
+> [!NOTE]
+> This project is inspired by [**eSim**](https://github.com/fossee/esim) (a downloadable
+> desktop EDA tool) — **thanks to the [FOSSEE Team](https://www.fossee.in/) at
+> [IIT Bombay](https://www.iitb.ac.in/)**. Unlike eSim, **CircuitSim is browser-based**:
+> no install, it runs entirely in your browser.
+
 An open-source, browser-based electronics playground: draw a **schematic**, watch it
 **simulate** (analog, digital, and MCU firmware), then flip to a **PCB editor** with a
 real **three.js 3D** view — all in one app.
 
+> [!NOTE]
 > Monorepo: a **FastAPI** backend (simulation engines + catalog + realtime) and a
 > **React + Vite + TypeScript** frontend (schematic canvas, PCB editor, 3D).
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Circuit, ComponentDef } from "../../domain";
+import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { getFootprint } from "./model/footprints";
 import { snap } from "./model/geometry";
 import { autoPlace, syncPlacements } from "./model/placement";
@@ -8,6 +9,16 @@ import { otherLayer } from "./model/pcbTypes";
 
 const DEFAULT_BOARD: Board = { width: 320, height: 240 };
 const BOARD_MARGIN = 40;
+const PLACEMENTS_KEY = "circuitsim.pcb.placements";
+
+function readPlacements(): Map<string, Placement> {
+  try {
+    const raw = window.localStorage.getItem(PLACEMENTS_KEY);
+    return raw ? new Map(JSON.parse(raw) as [string, Placement][]) : new Map();
+  } catch {
+    return new Map();
+  }
+}
 
 // Grow the board so every placed footprint fits; never shrink (avoids drag thrash).
 function fitBoard(
@@ -51,15 +62,19 @@ export interface PlacementController {
 }
 
 export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, ComponentDef>): PlacementController {
-  const [placements, setPlacements] = useState<Map<string, Placement>>(new Map());
-  const [board, setBoard] = useState<Board>(DEFAULT_BOARD);
+  const [placements, setPlacements] = useState<Map<string, Placement>>(readPlacements);
+  const [board, setBoard] = usePersistentState<Board>("circuitsim.pcb.board", DEFAULT_BOARD);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedPadId, setSelectedPadId] = useState<string | null>(null);
-  const seeded = useRef(false);
+  // Restored placements already represent a laid-out board, so skip the auto-place seed.
+  const seeded = useRef(placements.size > 0);
 
   useEffect(() => {
+    // Wait for the circuit to load before touching placements, so a refresh doesn't wipe
+    // the restored layout on the first (empty-circuit) render.
+    if (circuit.instances.length === 0) return;
     setPlacements((prev) => {
-      if (!seeded.current && circuit.instances.length > 0) {
+      if (!seeded.current) {
         seeded.current = true;
         const result = autoPlace(circuit, catalog, prev);
         setBoard(result.board);
@@ -67,7 +82,19 @@ export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, Com
       }
       return syncPlacements(circuit, catalog, prev);
     });
-  }, [circuit, catalog]);
+  }, [circuit, catalog, setBoard]);
+
+  // Persist the layout so a page refresh restores it (debounced to smooth dragging).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        window.localStorage.setItem(PLACEMENTS_KEY, JSON.stringify([...placements]));
+      } catch {
+        /* storage unavailable */
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [placements]);
 
   // Keep the board large enough for every placed part (parts used to fall off-board).
   useEffect(() => {
