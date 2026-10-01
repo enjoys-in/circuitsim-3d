@@ -54,7 +54,7 @@ function FootprintImpl({
   const art = render === "real" ? getPart(def) : null;
 
   return (
-    <g className={selected ? `${sideClass} fp--selected` : sideClass}>
+    <g className={cx(sideClass, selected && "fp--selected", render === "real" && "fp--real")}>
       <rect
         className="fp__body"
         x={cx0 - bodyW / 2}
@@ -114,6 +114,23 @@ function FootprintImpl({
             >
               <title>{`${label}.${pad.name}`}</title>
             </circle>
+            {render === "wire" &&
+              (() => {
+                const dx = cxp - cx0;
+                const dy = cyp - cy0;
+                const len = Math.hypot(dx, dy) || 1;
+                const off = Math.max(pw, ph) / 2 + 4;
+                return (
+                  <text
+                    className="fp__pinlabel"
+                    x={cxp + (dx / len) * off}
+                    y={cyp + (dy / len) * off + 1.5}
+                    textAnchor={dx > 3 ? "start" : dx < -3 ? "end" : "middle"}
+                  >
+                    {pad.name}
+                  </text>
+                );
+              })()}
           </g>
         );
       })}

@@ -18,6 +18,18 @@ export function PcbInspector() {
   const footprint = def ? getFootprint(def) : null;
   const netOf = new Map(pcb.pads.map((p) => [p.id, p.netId]));
 
+  // Human-readable net list: which component pins each wire joins.
+  const labelOf = new Map(circuit.instances.map((i) => [i.id, i.label || i.id]));
+  const connections = circuit.nets
+    .filter((n) => !n.id.startsWith("bb:"))
+    .map((n) => ({
+      id: n.id,
+      pins: n.endpoints.map((ep) => {
+        const [iid, pin] = ep.split(":");
+        return { label: labelOf.get(iid) ?? iid, pin: pin ?? "" };
+      }),
+    }));
+
   const partScale = placement?.padScale ?? 1;
   const selectedPad =
     footprint && placement && pcb.selectedPadId
@@ -171,6 +183,27 @@ export function PcbInspector() {
       ) : (
         <p className="pcb-inspector__hint">Select a part on the board to edit it, or drag parts from the library.</p>
       )}
+
+      <section className="pcb-inspector__block">
+        <h3>Connections{connections.length ? ` (${connections.length})` : ""}</h3>
+        {connections.length === 0 ? (
+          <p className="pcb-inspector__hint">No wires yet — wire parts in the schematic or route copper here.</p>
+        ) : (
+          <ul className="pcb-net-list">
+            {connections.map((net) => (
+              <li key={net.id} className="pcb-net">
+                {net.pins.map((p, i) => (
+                  <span key={i} className="pcb-net__pin">
+                    {i > 0 && <span className="pcb-net__sep">↔</span>}
+                    <b>{p.label}</b>
+                    <span className="pcb-net__dot">.{p.pin}</span>
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
