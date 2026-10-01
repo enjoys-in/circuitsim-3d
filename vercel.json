@@ -1,16 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm --prefix frontend install",
-  "buildCommand": "npm --prefix frontend run build -- --outDir dist --emptyOutDir",
-  "outputDirectory": "frontend/dist",
-  "rewrites": [
-    {
-      "source": "/v1/api/:path*",
-      "destination": "https://circuitsim.enjoys.in/v1/api/:path*"
+  "services": {
+    "frontend": {
+      "root": "frontend/",
+      "framework": "vite",
+      "buildCommand": "npm run build -- --outDir dist --emptyOutDir",
+      "outputDirectory": "dist",
+      "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
     },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+    "backend": {
+      "root": "backend/",
+      "framework": "fastapi",
+      "entrypoint": "app.main:app"
     }
+  },
+  "rewrites": [
+    { "source": "/v1/api/(.*)", "destination": { "service": "backend" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
