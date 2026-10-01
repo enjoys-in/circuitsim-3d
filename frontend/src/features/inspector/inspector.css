@@ -377,6 +377,10 @@
   font-weight: 700;
 }
 
+.assistant__badge--ok {
+  background: linear-gradient(90deg, #059669, #0891b2);
+}
+
 .assistant__lead {
   margin: 0;
   color: var(--muted);

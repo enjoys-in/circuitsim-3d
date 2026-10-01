@@ -35,10 +35,19 @@ class Settings(BaseSettings):
     lan_enabled: bool = False
     pairing_token: str | None = None
 
-    # AI assistant: OpenAI-compatible chat API (key read from env; never hardcoded).
+    # AI assistant: choose a provider ("auto" picks the first key found) and an optional
+    # model override. Keys are read from env; never hardcoded.
+    ai_provider: str = "auto"
+    ai_model: str | None = None
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
+    anthropic_api_key: str | None = None
+    groq_api_key: str | None = None
+    open_router_key: str | None = None
+    mistral_api_key: str | None = None
+    gemini_api_key: str | None = None
+    nvidia_api_key: str | None = None
 
     @property
     def is_production(self) -> bool:

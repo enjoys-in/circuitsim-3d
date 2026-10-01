@@ -7,6 +7,7 @@ built and validated with the same :class:`SimulationStudio` the MCP server uses.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -51,29 +52,103 @@ _FORMAT = (
 )
 
 
+@dataclass
+class _Provider:
+    name: str
+    base_url: str
+    model: str
+    key: str
+    fmt: str  # "openai" | "anthropic"
+
+
+# Preference when ai_provider="auto" (fast/free first; nvidia last — noted as slow).
+_AUTO_ORDER = ("groq", "gemini", "mistral", "openrouter", "openai", "anthropic", "nvidia")
+
+# name -> (base_url, default_model, format)
+_DEFAULTS: dict[str, tuple[str, str, str]] = {
+    "groq": ("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", "openai"),
+    "gemini": (
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+        "gemini-2.5-flash",
+        "openai",
+    ),
+    "mistral": ("https://api.mistral.ai/v1", "mistral-small-latest", "openai"),
+    "openrouter": (
+        "https://openrouter.ai/api/v1",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "openai",
+    ),
+    "nvidia": ("https://integrate.api.nvidia.com/v1", "openai/gpt-oss-20b", "openai"),
+    "anthropic": ("https://api.anthropic.com/v1", "claude-3-5-haiku-latest", "anthropic"),
+}
+
+
+def _provider_key(settings: Settings, name: str) -> str | None:
+    return {
+        "groq": settings.groq_api_key,
+        "gemini": settings.gemini_api_key,
+        "mistral": settings.mistral_api_key,
+        "openrouter": settings.open_router_key,
+        "nvidia": settings.nvidia_api_key,
+        "openai": settings.openai_api_key,
+        "anthropic": settings.anthropic_api_key,
+    }.get(name)
+
+
+def _resolve(settings: Settings, name: str) -> _Provider | None:
+    key = _provider_key(settings, name)
+    if not key:
+        return None
+    if name == "openai":
+        base, model, fmt = settings.openai_base_url, settings.openai_model, "openai"
+    else:
+        base, model, fmt = _DEFAULTS[name]
+    return _Provider(name, base, settings.ai_model or model, key, fmt)
+
+
 class AssistantService:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
         self._studio = SimulationStudio()
 
+    def _active(self) -> _Provider | None:
+        chosen = (self._settings.ai_provider or "auto").lower()
+        if chosen != "auto":
+            return _resolve(self._settings, chosen)
+        for name in _AUTO_ORDER:
+            provider = _resolve(self._settings, name)
+            if provider:
+                return provider
+        return None
+
     @property
     def configured(self) -> bool:
-        return bool(self._settings.openai_api_key)
+        return self._active() is not None
+
+    def active_info(self) -> dict[str, Any]:
+        provider = self._active()
+        return {
+            "configured": provider is not None,
+            "provider": provider.name if provider else None,
+            "model": provider.model if provider else None,
+        }
 
     def chat(self, messages: list[dict[str, str]], circuit: Circuit | None) -> dict[str, Any]:
-        if not self.configured:
+        provider = self._active()
+        if provider is None:
             return {
                 "reply": (
-                    "The AI assistant isn't configured yet. Set OPENAI_API_KEY (and optionally "
-                    "OPENAI_BASE_URL / OPENAI_MODEL) in the backend environment to enable it."
+                    "The AI assistant isn't configured. Add a provider key to the backend .env "
+                    "(GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, OPEN_ROUTER_KEY, "
+                    "OPENAI_API_KEY or ANTHROPIC_API_KEY); AI_PROVIDER defaults to 'auto'."
                 ),
                 "configured": False,
             }
         payload = self._build_messages(messages, circuit)
         try:
-            content = self._complete(payload)
+            content = self._complete(provider, payload)
         except httpx.HTTPError as exc:
-            return {"reply": f"The assistant request failed: {exc}", "configured": True}
+            return {"reply": f"The {provider.name} request failed: {exc}", "configured": True}
 
         parsed = self._parse(content)
         reply = str(parsed.get("reply") or "").strip() or "Done."
@@ -97,19 +172,54 @@ class AssistantService:
         }
 
     # -- internals ----------------------------------------------------------
-    def _complete(self, messages: list[dict[str, str]]) -> str:
-        url = f"{self._settings.openai_base_url.rstrip('/')}/chat/completions"
-        headers = {"Authorization": f"Bearer {self._settings.openai_api_key}"}
-        body = {
-            "model": self._settings.openai_model,
+    def _complete(self, provider: _Provider, messages: list[dict[str, str]]) -> str:
+        if provider.fmt == "anthropic":
+            return self._complete_anthropic(provider, messages)
+        url = f"{provider.base_url.rstrip('/')}/chat/completions"
+        headers = {"Authorization": f"Bearer {provider.key}"}
+        if provider.name == "openrouter":
+            headers["HTTP-Referer"] = "https://github.com/enjoys-in/circuitsim-3d"
+            headers["X-Title"] = "CircuitSim"
+        body: dict[str, Any] = {
+            "model": provider.model,
             "messages": messages,
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+            "max_tokens": 8000,
         }
-        with httpx.Client(timeout=45.0) as client:
+        if provider.name == "groq" and "gpt-oss" in provider.model:
+            # gpt-oss reasoning tokens count toward max_tokens; keep them small so the
+            # JSON answer isn't truncated.
+            body["reasoning_effort"] = "low"
+        with httpx.Client(timeout=90.0) as client:
             res = client.post(url, headers=headers, json=body)
             res.raise_for_status()
-            return res.json()["choices"][0]["message"]["content"]
+            return res.json()["choices"][0]["message"].get("content") or ""
+
+    def _complete_anthropic(self, provider: _Provider, messages: list[dict[str, str]]) -> str:
+        system = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
+        convo = [
+            {"role": m["role"], "content": m["content"]}
+            for m in messages
+            if m["role"] != "system"
+        ]
+        url = f"{provider.base_url.rstrip('/')}/messages"
+        headers = {
+            "x-api-key": provider.key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        body = {
+            "model": provider.model,
+            "max_tokens": 3000,
+            "temperature": 0.2,
+            "system": system,
+            "messages": convo,
+        }
+        with httpx.Client(timeout=60.0) as client:
+            res = client.post(url, headers=headers, json=body)
+            res.raise_for_status()
+            parts = res.json().get("content", [])
+            return "".join(b.get("text", "") for b in parts if b.get("type") == "text")
 
     def _build_messages(
         self, messages: list[dict[str, str]], circuit: Circuit | None
@@ -145,11 +255,24 @@ class AssistantService:
 
     @staticmethod
     def _parse(content: str) -> dict[str, Any]:
-        try:
-            data = json.loads(content)
-            return data if isinstance(data, dict) else {"reply": content}
-        except json.JSONDecodeError:
-            return {"reply": content}
+        text = content.strip()
+        if text.startswith("```"):  # strip ```json ... ``` fences
+            text = text.split("```")[1] if "```" in text[3:] else text[3:]
+            if text.lower().startswith("json"):
+                text = text[4:]
+        # Reasoning models may wrap JSON in prose; fall back to the first {...} block.
+        candidates = [text]
+        start, end = text.find("{"), text.rfind("}")
+        if start >= 0 and end > start:
+            candidates.append(text[start : end + 1])
+        for candidate in candidates:
+            try:
+                data = json.loads(candidate)
+                if isinstance(data, dict):
+                    return data
+            except json.JSONDecodeError:
+                continue
+        return {"reply": content.strip()}
 
     @staticmethod
     def _layout(circuit: Circuit) -> None:

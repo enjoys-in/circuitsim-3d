@@ -18,8 +18,8 @@ def _service() -> AssistantService:
 
 
 @router.get("/status")
-async def status() -> dict[str, bool]:
-    return {"configured": _service().configured}
+async def status() -> dict[str, object]:
+    return _service().active_info()
 
 
 @router.post("/chat", response_model=AssistantResponse)

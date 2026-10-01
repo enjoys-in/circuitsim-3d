@@ -18,12 +18,16 @@ export function AssistantPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     assistantService
       .status()
-      .then((s) => setConfigured(s.configured))
+      .then((s) => {
+        setConfigured(s.configured);
+        setProvider(s.provider ? `${s.provider}${s.model ? ` · ${s.model}` : ""}` : null);
+      })
       .catch(() => setConfigured(false));
   }, []);
 
@@ -53,7 +57,12 @@ export function AssistantPanel() {
   return (
     <div className="assistant">
       {configured === false && (
-        <div className="assistant__badge">AI not configured — set OPENAI_API_KEY on the backend</div>
+        <div className="assistant__badge">
+          AI not configured — add a provider key (e.g. GROQ_API_KEY) to the backend .env
+        </div>
+      )}
+      {configured && provider && (
+        <div className="assistant__badge assistant__badge--ok">AI ready — {provider}</div>
       )}
 
       {messages.length === 0 ? (
