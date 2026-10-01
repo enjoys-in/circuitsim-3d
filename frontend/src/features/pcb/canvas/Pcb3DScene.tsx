@@ -1,12 +1,11 @@
 import { Canvas } from "@react-three/fiber";
-import { Line, OrbitControls } from "@react-three/drei";
+import { Html, Line, OrbitControls } from "@react-three/drei";
 import { useCatalog } from "../../catalog/CatalogContext";
 import { useCircuitGraph } from "../../board/CircuitGraphContext";
 import { getFootprint } from "../model/footprints";
 import { usePcb } from "../PcbContext";
 
 const THICK = 8;
-const COMP_H = 16;
 const PAD_H = 1.4;
 
 // Rough body colour per part family so the board reads at a glance.
@@ -20,6 +19,19 @@ const CATEGORY_COLOR: Record<string, string> = {
   sensor: "#0e7490",
   actuator: "#be185d",
   display: "#0891b2",
+};
+
+// Taller bodies for boards/connectors, flatter for passives/displays.
+const CATEGORY_HEIGHT: Record<string, number> = {
+  passive: 9,
+  semiconductor: 12,
+  power: 18,
+  connector: 20,
+  dev_board: 22,
+  logic: 10,
+  sensor: 14,
+  actuator: 20,
+  display: 7,
 };
 
 export function Pcb3DScene() {
@@ -73,18 +85,24 @@ export function Pcb3DScene() {
             const fp = getFootprint(def);
             const w = placement.bodyW ?? fp.width;
             const h = placement.bodyH ?? fp.height;
+            const ch = CATEGORY_HEIGHT[def.category] ?? 14;
             const bottom = placement.side === "bottom";
-            const y = bottom ? -(THICK / 2 + COMP_H / 2) : THICK / 2 + COMP_H / 2;
+            const y = bottom ? -(THICK / 2 + ch / 2) : THICK / 2 + ch / 2;
+            const labelY = bottom ? y - ch / 2 - 4 : y + ch / 2 + 4;
             return (
-              <mesh
+              <group
                 key={inst.id}
-                castShadow
-                position={[placement.x - ox, y, placement.y - oz]}
+                position={[placement.x - ox, 0, placement.y - oz]}
                 rotation={[0, (-placement.rotation * Math.PI) / 180, 0]}
               >
-                <boxGeometry args={[w, COMP_H, h]} />
-                <meshStandardMaterial color={CATEGORY_COLOR[def.category] ?? "#475569"} roughness={0.6} />
-              </mesh>
+                <mesh castShadow position={[0, y, 0]}>
+                  <boxGeometry args={[w, ch, h]} />
+                  <meshStandardMaterial color={CATEGORY_COLOR[def.category] ?? "#475569"} roughness={0.6} />
+                </mesh>
+                <Html position={[0, labelY, 0]} center distanceFactor={diag} prepend>
+                  <div className="pcb3d-label">{inst.label}</div>
+                </Html>
+              </group>
             );
           })}
 

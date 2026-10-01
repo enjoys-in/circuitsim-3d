@@ -62,6 +62,33 @@ export function segmentDistance(a1: Point, a2: Point, b1: Point, b2: Point): num
   );
 }
 
+function orient(a: Point, b: Point, c: Point): number {
+  return (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+}
+
+function onSegment(a: Point, b: Point, p: Point): boolean {
+  return (
+    Math.min(a.x, b.x) <= p.x &&
+    p.x <= Math.max(a.x, b.x) &&
+    Math.min(a.y, b.y) <= p.y &&
+    p.y <= Math.max(a.y, b.y)
+  );
+}
+
+// True if segments a1a2 and b1b2 actually cross (endpoint-distance misses X-crossings).
+export function segmentsIntersect(a1: Point, a2: Point, b1: Point, b2: Point): boolean {
+  const d1 = orient(b1, b2, a1);
+  const d2 = orient(b1, b2, a2);
+  const d3 = orient(a1, a2, b1);
+  const d4 = orient(a1, a2, b2);
+  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
+  if (d1 === 0 && onSegment(b1, b2, a1)) return true;
+  if (d2 === 0 && onSegment(b1, b2, a2)) return true;
+  if (d3 === 0 && onSegment(a1, a2, b1)) return true;
+  if (d4 === 0 && onSegment(a1, a2, b2)) return true;
+  return false;
+}
+
 export function polyline(points: Point[]): string {
   return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
 }

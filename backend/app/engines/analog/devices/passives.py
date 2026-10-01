@@ -126,6 +126,57 @@ class Relay(Device):
         return {"on": self.energized(ctx), "coil_voltage": self.coil_voltage(ctx)}
 
 
+class SpdtSwitch(Device):
+    """Manual SPDT: COM bridges to NO when position=1, otherwise to NC."""
+
+    terminals = ("com", "no", "nc")
+
+    def thrown(self) -> bool:
+        return bool(self.p("position", 0))
+
+    def stamp(self, s: Stamper, ctx: Context) -> None:
+        closed, opened = 1.0 / CLOSED_RESISTANCE, OPEN_CONDUCTANCE
+        on = self.thrown()
+        s.conductance(self.n("com"), self.n("no"), closed if on else opened)
+        s.conductance(self.n("com"), self.n("nc"), opened if on else closed)
+
+    def report(self, ctx: Context) -> dict[str, Any]:
+        return {"on": self.thrown(), "throw": "NO" if self.thrown() else "NC"}
+
+
+class SlideSwitch(SpdtSwitch):
+    """Slide SPDT with 1/2 throws instead of NO/NC."""
+
+    terminals = ("com", "1", "2")
+
+    def stamp(self, s: Stamper, ctx: Context) -> None:
+        closed, opened = 1.0 / CLOSED_RESISTANCE, OPEN_CONDUCTANCE
+        on = self.thrown()
+        s.conductance(self.n("com"), self.n("2"), closed if on else opened)
+        s.conductance(self.n("com"), self.n("1"), opened if on else closed)
+
+    def report(self, ctx: Context) -> dict[str, Any]:
+        return {"on": self.thrown(), "throw": "2" if self.thrown() else "1"}
+
+
+class DipSwitch(Device):
+    """4-way DIP: switch i bridges {i}a-{i}b when bit i of `switches` is set."""
+
+    terminals = ("1a", "1b", "2a", "2b", "3a", "3b", "4a", "4b")
+
+    def on(self, i: int) -> bool:
+        return bool(int(self.p("switches", 0)) & (1 << i))
+
+    def stamp(self, s: Stamper, ctx: Context) -> None:
+        closed, opened = 1.0 / CLOSED_RESISTANCE, OPEN_CONDUCTANCE
+        for i in range(4):
+            g = closed if self.on(i) else opened
+            s.conductance(self.n(f"{i + 1}a"), self.n(f"{i + 1}b"), g)
+
+    def report(self, ctx: Context) -> dict[str, Any]:
+        return {"switches": [1 if self.on(i) else 0 for i in range(4)]}
+
+
 class Potentiometer(TwoTerminal):
     pins = ("1", "3")
 

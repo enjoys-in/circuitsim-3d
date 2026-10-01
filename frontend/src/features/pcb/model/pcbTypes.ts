@@ -74,7 +74,7 @@ export interface Airwire {
 
 export interface DrcViolation {
   id: string;
-  kind: "clearance" | "unrouted" | "overlap";
+  kind: "clearance" | "short" | "unrouted" | "overlap";
   message: string;
   at?: Point;
 }

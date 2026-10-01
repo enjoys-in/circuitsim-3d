@@ -1,7 +1,7 @@
 import type { Circuit, ComponentDef } from "../../../domain";
 import { getFootprint } from "./footprints";
 import { distance, padWorld } from "./geometry";
-import type { Airwire, Placement, Point, Trace, Via } from "./pcbTypes";
+import type { Airwire, Layer, Placement, Point, Trace, Via } from "./pcbTypes";
 import { padId } from "./pcbTypes";
 
 export interface PadInfo {
@@ -72,20 +72,27 @@ export function collectPads(
 
 function buildConnectivity(pads: PadInfo[], traces: Trace[], vias: Via[]): DSU {
   const dsu = new DSU();
-  const nodes: { id: string; point: Point }[] = [
-    ...pads.map((p) => ({ id: p.id, point: p.point })),
-    ...vias.map((v) => ({ id: `via:${v.id}`, point: { x: v.x, y: v.y } })),
+  // Pads are through-hole and vias bridge layers, so both connect to any layer.
+  type NodeLayer = Layer | "any";
+  const nodes: { id: string; point: Point; layer: NodeLayer }[] = [
+    ...pads.map((p) => ({ id: p.id, point: p.point, layer: "any" as NodeLayer })),
+    ...vias.map((v) => ({ id: `via:${v.id}`, point: { x: v.x, y: v.y }, layer: "any" as NodeLayer })),
   ];
   for (const trace of traces) {
     const start = `trace:${trace.id}:0`;
     const end = `trace:${trace.id}:1`;
     dsu.union(start, end);
-    nodes.push({ id: start, point: trace.points[0] });
-    nodes.push({ id: end, point: trace.points[trace.points.length - 1] });
+    nodes.push({ id: start, point: trace.points[0], layer: trace.layer });
+    nodes.push({ id: end, point: trace.points[trace.points.length - 1], layer: trace.layer });
   }
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
-      if (distance(nodes[i].point, nodes[j].point) <= COINCIDENT) dsu.union(nodes[i].id, nodes[j].id);
+      const a = nodes[i];
+      const b = nodes[j];
+      if (distance(a.point, b.point) > COINCIDENT) continue;
+      // Copper on different layers only joins through a pad or via.
+      if (a.layer !== "any" && b.layer !== "any" && a.layer !== b.layer) continue;
+      dsu.union(a.id, b.id);
     }
   }
   return dsu;

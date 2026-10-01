@@ -1,6 +1,6 @@
 import { usePcb } from "./PcbContext";
 
-const ICON: Record<string, string> = { clearance: "!", overlap: "!", unrouted: "..." };
+const ICON: Record<string, string> = { clearance: "!", short: "⚡", overlap: "!", unrouted: "..." };
 
 export function DrcPanel() {
   const { drc } = usePcb();

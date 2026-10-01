@@ -1,4 +1,4 @@
-import { segmentDistance } from "./geometry";
+import { segmentDistance, segmentsIntersect } from "./geometry";
 import type { Board, DrcViolation, Point, Trace } from "./pcbTypes";
 import { CLEARANCE } from "./pcbTypes";
 
@@ -40,13 +40,22 @@ export function runDrc(
       const s = segments[i];
       const t = segments[j];
       if (s.layer !== t.layer || s.netId === t.netId) continue;
-      const gap = segmentDistance(s.a, s.b, t.a, t.b) - (s.width + t.width) / 2;
-      if (gap < CLEARANCE) {
-        const at = { x: (s.a.x + t.b.x) / 2, y: (s.a.y + t.b.y) / 2 };
+      const crossing = segmentsIntersect(s.a, s.b, t.a, t.b);
+      const gap = crossing ? -1 : segmentDistance(s.a, s.b, t.a, t.b) - (s.width + t.width) / 2;
+      const at = { x: (s.a.x + t.b.x) / 2, y: (s.a.y + t.b.y) / 2 };
+      if (gap < 0) {
+        // Different-net copper physically overlaps on one layer = hard short.
+        violations.push({
+          id: `short-${i}-${j}`,
+          kind: "short",
+          message: `Short — ${s.layer} traces on different nets overlap`,
+          at,
+        });
+      } else if (gap < CLEARANCE) {
         violations.push({
           id: `clearance-${i}-${j}`,
           kind: "clearance",
-          message: `Traces on ${s.layer} are too close (${Math.max(0, gap).toFixed(1)} < ${CLEARANCE} px)`,
+          message: `Traces on ${s.layer} are too close (${gap.toFixed(1)} < ${CLEARANCE} px)`,
           at,
         });
       }

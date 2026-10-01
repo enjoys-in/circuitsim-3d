@@ -289,6 +289,16 @@
   color: #fde68a;
 }
 
+.drc-panel__item--short .drc-panel__badge {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.drc-panel__item--short {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
 .pcb-canvas-wrap {
   position: relative;
   width: 100%;
@@ -378,6 +388,19 @@
   flex: 1;
   min-height: 0;
   position: relative;
+}
+
+.pcb3d-label {
+  pointer-events: none;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(2, 6, 23, 0.82);
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .pcb3d__board {

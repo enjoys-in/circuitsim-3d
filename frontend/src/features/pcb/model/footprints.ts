@@ -1,4 +1,5 @@
 import type { ComponentDef, Pin } from "../../../domain";
+import { BREADBOARD_KEY, getBreadboardLayout } from "../../parts/library/breadboardModel";
 import type { Footprint, Pad, PadShape } from "./pcbTypes";
 
 const PITCH = 30;
@@ -55,12 +56,25 @@ function boardFootprint(pins: Pin[]): Footprint {
 }
 
 export function buildFootprint(def: ComponentDef): Footprint {
+  if (def.key === BREADBOARD_KEY) return breadboardFootprint();
   if (def.pins.length === 0) return { width: 220, height: 140, pads: [], outline: "box" };
   if (def.pins.length === 2) return twoTerminal(def.pins);
   if (def.category === "logic") return dual(def.pins);
   if (def.category === "dev_board") return dual(def.pins);
   if (def.pins.length <= 3) return inline(def.pins);
   return boardFootprint(def.pins);
+}
+
+// The breadboard carries no def.pins; derive its pad grid from the hole layout.
+function breadboardFootprint(): Footprint {
+  const bb = getBreadboardLayout();
+  const pads: Pad[] = bb.holes.map((h) => ({
+    name: h.name,
+    x: h.x,
+    y: h.y,
+    shape: h.kind === "term" ? "round" : "rect",
+  }));
+  return { width: bb.width, height: bb.height, pads, outline: "box" };
 }
 
 const cache = new Map<string, Footprint>();

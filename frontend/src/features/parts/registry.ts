@@ -11,6 +11,7 @@ import { powerParts } from "./library/power";
 import { radialParts } from "./library/radial";
 import { semiconductorParts } from "./library/semis";
 import { sensorParts } from "./library/sensors";
+import { switchParts } from "./library/switches";
 import type { PartFactory, PartSpec } from "./types";
 
 const FACTORIES: Record<string, PartFactory> = {
@@ -21,6 +22,7 @@ const FACTORIES: Record<string, PartFactory> = {
   ...powerParts,
   ...sensorParts,
   ...actuatorParts,
+  ...switchParts,
   ...audioParts,
   ...boardParts,
   ...breadboardParts,
@@ -30,7 +32,13 @@ const FACTORIES: Record<string, PartFactory> = {
 function fallback(def: ComponentDef): PartFactory {
   if (def.category === "dev_board") return devBoard;
   if (def.key.startsWith("custom_")) {
-    const leftPins = def.pins.filter((p) => p.direction !== "output").map((p) => p.name);
+    const names = def.pins.map((p) => p.name);
+    const outputs = def.pins.filter((p) => p.direction === "output").map((p) => p.name);
+    // Mixed in/out -> inputs left, outputs right; otherwise split evenly so 2-pin parts balance.
+    const leftPins =
+      outputs.length > 0 && outputs.length < names.length
+        ? names.filter((n) => !outputs.includes(n))
+        : names.slice(0, Math.ceil(names.length / 2));
     return moduleFactory({
       color: "teal",
       title: def.name.slice(0, 16).toUpperCase(),
