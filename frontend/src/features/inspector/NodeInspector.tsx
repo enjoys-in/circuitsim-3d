@@ -103,7 +103,7 @@ export function NodeInspector({ node }: { node: PartNodeType }) {
                 key={pin.name}
                 className={cx("pin-chip", `pin-chip--${pin.direction}`, wired && "pin-chip--wired")}
                 title={wired ? `${pin.direction} → ${wired.to.join(", ")}` : `${pin.direction} · unconnected`}
-                style={wired ? { borderColor: wired.color, color: wired.color } : undefined}
+                style={wired ? { borderColor: wired.color } : undefined}
               >
                 {wired && <span className="pin-chip__dot" style={{ background: wired.color }} />}
                 {pin.name}

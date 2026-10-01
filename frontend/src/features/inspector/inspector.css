@@ -139,16 +139,19 @@
 
 .pin-chip--wired {
   background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
   font-weight: 600;
 }
 
 .pin-chip__dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   margin-right: 5px;
   border-radius: 50%;
   vertical-align: middle;
+  /* Light ring keeps dark/black wire colours visible on the dark panel. */
+  box-shadow: 0 0 0 1px rgba(226, 232, 240, 0.5);
 }
 
 .pin-chip--power {
