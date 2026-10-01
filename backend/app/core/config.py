@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     lan_enabled: bool = False
     pairing_token: str | None = None
 
+    # AI assistant: OpenAI-compatible chat API (key read from env; never hardcoded).
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"

@@ -363,6 +363,8 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px;
+  flex: 1;
+  min-height: 0;
 }
 
 .assistant__badge {
@@ -384,12 +386,66 @@
 
 .assistant__ideas {
   margin: 0;
-  padding-left: 16px;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+}
+
+.assistant__idea {
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
   color: var(--text);
+  font: inherit;
   font-size: 12.5px;
+  cursor: pointer;
+}
+
+.assistant__idea:hover {
+  border-color: var(--accent);
+}
+
+.assistant__thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.assistant__msg {
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-width: 92%;
+}
+
+.assistant__msg--user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #04121a;
+  font-weight: 500;
+}
+
+.assistant__msg--assistant {
+  align-self: flex-start;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.assistant__msg--typing {
+  color: var(--muted);
+  font-style: italic;
 }
 
 .assistant__composer {
@@ -399,7 +455,6 @@
   padding: 10px;
   border: 1px dashed var(--border);
   border-radius: 10px;
-  opacity: 0.75;
 }
 
 .assistant__input {

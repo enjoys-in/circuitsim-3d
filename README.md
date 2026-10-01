@@ -46,6 +46,12 @@ real **three.js 3D** view — all in one app.
 - A real **three.js** scene (board, copper pads, traces, extruded component bodies with
   per-family heights and labels). Drag to orbit, scroll to zoom, right-drag to pan.
 
+### AI assistant (optional)
+- Describe a circuit in plain English and the assistant builds it, wires it, runs the
+  simulation and drops it on your board. Grounded in the real component catalog.
+- Uses an **OpenAI-compatible** chat API with the key read from the environment
+  (`OPENAI_API_KEY`); the panel stays gracefully disabled until a key is configured.
+
 ### Projects & export
 - Save / load projects; export BOM (CSV), netlist, and circuit JSON.
 
