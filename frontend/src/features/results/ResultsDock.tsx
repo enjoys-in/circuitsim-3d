@@ -43,18 +43,23 @@ export default function ResultsDock() {
           </>
         }
       />
-      {!collapsed && (
-        <div className={cx("results__body", updating && "results__body--updating")}>
-          {tab === "overview" && <OverviewPanel result={result} error={error} />}
-          {tab === "waves" && result && (
-            <Suspense fallback={<Skeleton height={160} radius={10} />}>
-              <WaveformPanel result={result} cursor={playback.frame} />
-            </Suspense>
-          )}
-          {tab === "waves" && !result && <OverviewPanel result={null} error={error} />}
-          {tab === "serial" && <SerialConsole log={result?.log ?? []} />}
-        </div>
-      )}
+      <div
+        className={cx(
+          "results__body",
+          collapsed && "results__body--collapsed",
+          updating && "results__body--updating",
+        )}
+        aria-hidden={collapsed}
+      >
+        {tab === "overview" && <OverviewPanel result={result} error={error} />}
+        {tab === "waves" && result && (
+          <Suspense fallback={<Skeleton height={160} radius={10} />}>
+            <WaveformPanel result={result} cursor={playback.frame} />
+          </Suspense>
+        )}
+        {tab === "waves" && !result && <OverviewPanel result={null} error={error} />}
+        {tab === "serial" && <SerialConsole log={result?.log ?? []} />}
+      </div>
     </section>
   );
 }

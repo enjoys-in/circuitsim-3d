@@ -26,6 +26,17 @@ export interface Placement {
   y: number;
   rotation: number;
   side: Layer;
+  bodyW?: number;
+  bodyH?: number;
+  padScale?: number;
+  padAngle?: number;
+  pads?: Record<string, PadOverride>;
+}
+
+export interface PadOverride {
+  w?: number;
+  h?: number;
+  angle?: number;
 }
 
 export interface Trace {
@@ -73,6 +84,14 @@ export const DEFAULT_TRACE_WIDTH = 4;
 export const VIA_RADIUS = 4;
 export const PAD_HIT_RADIUS = 7;
 export const CLEARANCE = 3;
+
+// Board/pad geometry is kept in abstract units; expose them to users as millimetres.
+export const UNITS_PER_MM = 4;
+export const ROUND_PAD = 10;
+export const RECT_PAD = 11;
+
+export const toMm = (units: number): number => Math.round((units / UNITS_PER_MM) * 10) / 10;
+export const fromMm = (value: number): number => Math.round(value * UNITS_PER_MM);
 
 export const LAYER_COLOR: Record<Layer, string> = {
   top: "#e0533f",

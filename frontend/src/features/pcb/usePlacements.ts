@@ -3,7 +3,7 @@ import type { Circuit, ComponentDef } from "../../domain";
 import { getFootprint } from "./model/footprints";
 import { snap } from "./model/geometry";
 import { autoPlace, syncPlacements } from "./model/placement";
-import type { Board, Layer, Placement, Point } from "./model/pcbTypes";
+import type { Board, Layer, PadOverride, Placement, Point } from "./model/pcbTypes";
 import { otherLayer } from "./model/pcbTypes";
 
 const DEFAULT_BOARD: Board = { width: 320, height: 240 };
@@ -35,11 +35,18 @@ export interface PlacementController {
   placements: Map<string, Placement>;
   board: Board;
   selectedId: string | null;
+  selectedPadId: string | null;
   selectComponent: (id: string | null) => void;
+  selectPad: (id: string | null) => void;
   autoArrange: () => void;
   moveComponent: (id: string, point: Point) => void;
   rotateComponent: (id: string) => void;
   flipComponent: (id: string) => void;
+  setBodySize: (id: string, patch: { w?: number; h?: number }) => void;
+  setPadScale: (id: string, scale: number) => void;
+  rotatePads: (id: string) => void;
+  setPadBox: (instanceId: string, padName: string, override: PadOverride) => void;
+  turnPad: (instanceId: string, padName: string) => void;
   resizeBoard: (patch: Partial<Board>) => void;
 }
 
@@ -47,6 +54,7 @@ export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, Com
   const [placements, setPlacements] = useState<Map<string, Placement>>(new Map());
   const [board, setBoard] = useState<Board>(DEFAULT_BOARD);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedPadId, setSelectedPadId] = useState<string | null>(null);
   const seeded = useRef(false);
 
   useEffect(() => {
@@ -69,6 +77,9 @@ export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, Com
   // Drop the selection when its part leaves the circuit.
   useEffect(() => {
     setSelectedId((id) => (id && circuit.instances.some((i) => i.id === id) ? id : null));
+    setSelectedPadId((pid) =>
+      pid && circuit.instances.some((i) => i.id === pid.split(":")[0]) ? pid : null,
+    );
   }, [circuit]);
 
   const patch = useCallback(
@@ -94,13 +105,40 @@ export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, Com
       placements,
       board,
       selectedId,
-      selectComponent: setSelectedId,
+      selectedPadId,
+      selectComponent: (id) => {
+        setSelectedId(id);
+        setSelectedPadId(null);
+      },
+      selectPad: (id) => {
+        setSelectedPadId(id);
+        if (id) setSelectedId(id.split(":")[0]);
+      },
       autoArrange,
       moveComponent: (id, point) => patch(id, (p) => ({ ...p, x: snap(point.x), y: snap(point.y) })),
       rotateComponent: (id) => patch(id, (p) => ({ ...p, rotation: (p.rotation + 90) % 360 })),
       flipComponent: (id) => patch(id, (p) => ({ ...p, side: otherLayer(p.side) as Layer })),
+      setBodySize: (id, size) =>
+        patch(id, (p) => ({
+          ...p,
+          bodyW: size.w !== undefined ? Math.max(20, Math.round(size.w)) : p.bodyW,
+          bodyH: size.h !== undefined ? Math.max(20, Math.round(size.h)) : p.bodyH,
+        })),
+      setPadScale: (id, scale) =>
+        patch(id, (p) => ({ ...p, padScale: Math.min(2.5, Math.max(0.5, scale)) })),
+      rotatePads: (id) => patch(id, (p) => ({ ...p, padAngle: ((p.padAngle ?? 0) + 90) % 360 })),
+      setPadBox: (instanceId, padName, override) =>
+        patch(instanceId, (p) => ({
+          ...p,
+          pads: { ...p.pads, [padName]: { ...p.pads?.[padName], ...override } },
+        })),
+      turnPad: (instanceId, padName) =>
+        patch(instanceId, (p) => {
+          const prev = p.pads?.[padName] ?? {};
+          return { ...p, pads: { ...p.pads, [padName]: { ...prev, angle: ((prev.angle ?? 0) + 90) % 360 } } };
+        }),
       resizeBoard: (delta) => setBoard((prev) => ({ ...prev, ...delta })),
     }),
-    [placements, board, selectedId, autoArrange, patch],
+    [placements, board, selectedId, selectedPadId, autoArrange, patch],
   );
 }

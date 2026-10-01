@@ -11,9 +11,11 @@ export type PcbViewMode = "2d" | "3d";
 interface Props {
   mode: PcbViewMode;
   onMode: (mode: PcbViewMode) => void;
+  render: "wire" | "real";
+  onRender: (render: "wire" | "real") => void;
 }
 
-export function PcbToolbar({ mode, onMode }: Props) {
+export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
   const pcb = usePcb();
   const errors = pcb.drc.filter((v) => v.kind !== "unrouted").length;
   const unrouted = pcb.netCount - pcb.connectivity.routedNets.size;
@@ -33,6 +35,20 @@ export function PcbToolbar({ mode, onMode }: Props) {
           </button>
         ))}
       </div>
+      {mode === "2d" && (
+        <div className="segmented">
+          {(["wire", "real"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              className={cx("segmented__item", render === r && "segmented__item--active")}
+              onClick={() => onRender(r)}
+            >
+              {r === "wire" ? "Wire" : "Real"}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="pcb-toolbar__group">
         <span className="pcb-toolbar__label">Layer</span>
         <div className="segmented">
@@ -67,16 +83,6 @@ export function PcbToolbar({ mode, onMode }: Props) {
         max={16}
         onCommit={pcb.setTraceWidth}
       />
-
-      <div className="pcb-toolbar__group">
-        <span className="pcb-toolbar__label">Part</span>
-        <Button size="sm" disabled={!selected} onClick={() => selected && pcb.rotateComponent(selected)}>
-          ⟳ Rotate
-        </Button>
-        <Button size="sm" disabled={!selected} onClick={() => selected && pcb.flipComponent(selected)}>
-          ⇋ Flip
-        </Button>
-      </div>
 
       <div className="pcb-toolbar__end">
         {pcb.routing && <span className="pcb-hint">routing — click pads/points, V = via, Esc = cancel</span>}

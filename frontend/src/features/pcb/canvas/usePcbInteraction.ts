@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type WheelEvent,
 } from "react";
-import { distance, snap } from "../model/geometry";
+import { distance, rotate, snap } from "../model/geometry";
 import type { PadInfo } from "../model/nets";
 import type { Point } from "../model/pcbTypes";
 import type { PcbState } from "../usePcbState";
@@ -37,6 +37,7 @@ export interface Interaction {
   onDoubleClick: () => void;
   onSvgContextMenu: (e: MouseEvent) => void;
   onBodyPointerDown: (e: PointerEvent, instanceId: string) => void;
+  onResizePointerDown: (e: PointerEvent, instanceId: string) => void;
   onPadPointerDown: (e: PointerEvent, pad: PadInfo) => void;
   onTracePointerDown: (e: PointerEvent, id: string) => void;
   onTraceContextMenu: (e: MouseEvent, id: string) => void;
@@ -46,6 +47,7 @@ export interface Interaction {
 export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
   const [cursor, setCursor] = useState<Point | null>(null);
   const drag = useRef<DragState | null>(null);
+  const resize = useRef<{ instanceId: string } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
   const routingRef = useRef(pcb.routing);
   routingRef.current = pcb.routing;
@@ -134,10 +136,30 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
     [pcb, view],
   );
 
+  const onResizePointerDown = useCallback(
+    (e: PointerEvent, instanceId: string) => {
+      e.stopPropagation();
+      if (routingRef.current) return;
+      pcb.selectComponent(instanceId);
+      resize.current = { instanceId };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [pcb],
+  );
+
   const onSvgPointerMove = useCallback(
     (e: PointerEvent) => {
       const board = view.toBoard(e.clientX, e.clientY);
-      if (drag.current) {
+      if (resize.current) {
+        const placement = pcb.placements.get(resize.current.instanceId);
+        if (placement) {
+          const local = rotate({ x: board.x - placement.x, y: board.y - placement.y }, -placement.rotation);
+          pcb.setBodySize(resize.current.instanceId, {
+            w: Math.abs(local.x) * 2,
+            h: Math.abs(local.y) * 2,
+          });
+        }
+      } else if (drag.current) {
         const target = { x: board.x - drag.current.offset.x, y: board.y - drag.current.offset.y };
         pcb.moveComponent(drag.current.instanceId, target);
         if (drag.current.anchors.length) {
@@ -163,6 +185,7 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
 
   const onSvgPointerUp = useCallback(() => {
     drag.current = null;
+    resize.current = null;
     pan.current = null;
   }, []);
 
@@ -186,6 +209,7 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
       [pcb],
     ),
     onBodyPointerDown,
+    onResizePointerDown,
     onPadPointerDown,
     onTracePointerDown: useCallback((e: PointerEvent, id: string) => {
       e.stopPropagation();

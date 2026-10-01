@@ -17,7 +17,13 @@ interface Clipboard {
 }
 
 const PASTE_OFFSET = 28;
+const SPREAD_COLS = 6;
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
+
+// Lay out parts added outside the schematic (e.g. from the PCB) on a tidy grid.
+function spreadPosition(index: number): Position {
+  return { x: 40 + (index % SPREAD_COLS) * 130, y: 40 + Math.floor(index / SPREAD_COLS) * 110 };
+}
 
 export function useGraphActions(
   nodesRef: React.MutableRefObject<PartNodeType[]>,
@@ -59,6 +65,20 @@ export function useGraphActions(
           const interact = getPart(data.def).interact;
           return interact ? { params: interact(data.params) } : {};
         }),
+      addPart: (def, opts) => {
+        const id = uid("p");
+        setNodes((prev) => [
+          ...prev,
+          createPartNode({
+            id,
+            def,
+            position: opts?.position ?? spreadPosition(prev.length),
+            label: opts?.label || nextDesignator(def, prev.map((n) => n.data.label)),
+            params: opts?.params,
+          }),
+        ]);
+        return id;
+      },
       removeNode: (id) => {
         setNodes((prev) => prev.filter((n) => n.id !== id));
         setEdges((prev) => prev.filter((e) => e.source !== id && e.target !== id));

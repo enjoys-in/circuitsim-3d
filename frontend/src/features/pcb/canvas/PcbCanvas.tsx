@@ -1,24 +1,55 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, type DragEvent } from "react";
 import { useCatalog } from "../../catalog/CatalogContext";
-import { useCircuitGraph } from "../../board/CircuitGraphContext";
+import { useCircuitActions, useCircuitGraph } from "../../board/CircuitGraphContext";
+import { DRAG_MIME } from "../../../shared/constants";
+import { readPreset } from "../../parts/dragPayload";
 import type { PadInfo } from "../model/nets";
+import type { Point } from "../model/pcbTypes";
 import { usePcb } from "../PcbContext";
-import { Footprint } from "./Footprint";
+import { Footprint, type PcbRenderMode } from "./Footprint";
 import { DrcMarkers, Ratsnest, RoutePreview } from "./Overlays";
 import { PcbZoomOverlay } from "./PcbZoomOverlay";
+import { SelectionHandles } from "./SelectionHandles";
 import { TraceLayer } from "./TraceLayer";
 import { usePanZoom } from "./usePanZoom";
 import { usePcbInteraction } from "./usePcbInteraction";
 
-export function PcbCanvas() {
+export function PcbCanvas({ render }: { render: PcbRenderMode }) {
   const pcb = usePcb();
   const { circuit } = useCircuitGraph();
+  const { addPart } = useCircuitActions();
   const { byKey } = useCatalog();
   const view = usePanZoom(pcb.board);
   const interaction = usePcbInteraction(pcb, view);
   const { board } = pcb;
 
   useEffect(() => view.fit(board), [board.width, board.height, view.fit]); // eslint-disable-line
+
+  // A dropped part only gets a placement once the circuit re-derives; move it to
+  // the drop point as soon as that placement exists.
+  const pending = useRef<{ id: string; point: Point } | null>(null);
+  useEffect(() => {
+    const p = pending.current;
+    if (p && pcb.placements.has(p.id)) {
+      pcb.moveComponent(p.id, p.point);
+      pcb.selectComponent(p.id);
+      pending.current = null;
+    }
+  }, [pcb]);
+
+  const onDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    const def = byKey.get(e.dataTransfer.getData(DRAG_MIME));
+    if (!def) return;
+    const preset = readPreset(e.dataTransfer);
+    const point = view.toBoard(e.clientX, e.clientY);
+    const id = addPart(def, { params: preset?.params, label: preset?.name });
+    pending.current = { id, point };
+  };
 
   const padsByInstance = useMemo(() => {
     const map = new Map<string, PadInfo[]>();
@@ -28,8 +59,17 @@ export function PcbCanvas() {
 
   const highlightNet = pcb.routing?.netId ?? null;
 
+  const selectedFootprint = (() => {
+    const id = pcb.selectedId;
+    if (!id) return null;
+    const inst = circuit.instances.find((i) => i.id === id);
+    const def = inst && byKey.get(inst.component_key);
+    const placement = pcb.placements.get(id);
+    return inst && def && placement ? { id, def, placement } : null;
+  })();
+
   return (
-    <div className="pcb-canvas-wrap">
+    <div className="pcb-canvas-wrap" onDrop={onDrop} onDragOver={onDragOver}>
     <svg
       ref={view.svgRef}
       className="pcb-canvas"
@@ -72,15 +112,29 @@ export function PcbCanvas() {
             instanceId={inst.id}
             label={inst.label}
             def={def}
+            params={inst.params}
             placement={placement}
             pads={padsByInstance.get(inst.id) ?? []}
             selected={pcb.selectedId === inst.id}
+            selectedPadId={pcb.selectedPadId}
+            render={render}
             highlightNet={highlightNet}
             onBodyPointerDown={interaction.onBodyPointerDown}
             onPadPointerDown={interaction.onPadPointerDown}
           />
         );
       })}
+
+      {selectedFootprint && (
+        <SelectionHandles
+          instanceId={selectedFootprint.id}
+          placement={selectedFootprint.placement}
+          def={selectedFootprint.def}
+          onRotate={() => pcb.rotateComponent(selectedFootprint.id)}
+          onFlip={() => pcb.flipComponent(selectedFootprint.id)}
+          onResizePointerDown={interaction.onResizePointerDown}
+        />
+      )}
 
       <Ratsnest airwires={pcb.connectivity.airwires} />
       {pcb.routing && <RoutePreview routing={pcb.routing} cursor={interaction.cursor} />}

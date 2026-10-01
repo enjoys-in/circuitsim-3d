@@ -1,0 +1,96 @@
+import { Canvas } from "@react-three/fiber";
+import { Line, OrbitControls } from "@react-three/drei";
+import { useCatalog } from "../../catalog/CatalogContext";
+import { useCircuitGraph } from "../../board/CircuitGraphContext";
+import { getFootprint } from "../model/footprints";
+import { usePcb } from "../PcbContext";
+
+const THICK = 8;
+const COMP_H = 16;
+const PAD_H = 1.4;
+
+// Rough body colour per part family so the board reads at a glance.
+const CATEGORY_COLOR: Record<string, string> = {
+  passive: "#3b82f6",
+  semiconductor: "#111827",
+  power: "#7c3aed",
+  connector: "#b45309",
+  dev_board: "#0f766e",
+  logic: "#334155",
+  sensor: "#0e7490",
+  actuator: "#be185d",
+  display: "#0891b2",
+};
+
+export function Pcb3DScene() {
+  const pcb = usePcb();
+  const { circuit } = useCircuitGraph();
+  const { byKey } = useCatalog();
+  const { board } = pcb;
+  const ox = board.width / 2;
+  const oz = board.height / 2;
+  const diag = Math.hypot(board.width, board.height);
+
+  return (
+    <div className="pcb3d">
+      <div className="pcb3d__controls">
+        <span className="pcb3d__hint">drag to orbit · scroll to zoom · right-drag to pan</span>
+      </div>
+      <div className="pcb3d-canvas">
+        <Canvas shadows camera={{ position: [diag * 0.45, diag * 0.95, diag * 0.7], fov: 48, near: 1, far: diag * 12 }}>
+          <color attach="background" args={["#06141a"]} />
+          <ambientLight intensity={0.55} />
+          <directionalLight position={[ox, diag, oz]} intensity={1.1} castShadow />
+          <directionalLight position={[-ox, diag * 0.6, -oz]} intensity={0.4} />
+
+          <mesh receiveShadow position={[0, 0, 0]}>
+            <boxGeometry args={[board.width, THICK, board.height]} />
+            <meshStandardMaterial color="#0b6b3a" roughness={0.78} metalness={0.05} />
+          </mesh>
+
+          {pcb.pads.map((pad) => (
+            <mesh key={pad.id} position={[pad.point.x - ox, THICK / 2 + PAD_H / 2, pad.point.y - oz]}>
+              <cylinderGeometry args={[4, 4, PAD_H, 20]} />
+              <meshStandardMaterial color="#e3b25a" metalness={0.8} roughness={0.35} />
+            </mesh>
+          ))}
+
+          {pcb.traces.map((t) => (
+            <Line
+              key={t.id}
+              points={t.points.map(
+                (p) => [p.x - ox, THICK / 2 + PAD_H + 0.3, p.y - oz] as [number, number, number],
+              )}
+              color={t.layer === "top" ? "#e0533f" : "#3f7de0"}
+              lineWidth={2.5}
+            />
+          ))}
+
+          {circuit.instances.map((inst) => {
+            const def = byKey.get(inst.component_key);
+            const placement = pcb.placements.get(inst.id);
+            if (!def || !placement) return null;
+            const fp = getFootprint(def);
+            const w = placement.bodyW ?? fp.width;
+            const h = placement.bodyH ?? fp.height;
+            const bottom = placement.side === "bottom";
+            const y = bottom ? -(THICK / 2 + COMP_H / 2) : THICK / 2 + COMP_H / 2;
+            return (
+              <mesh
+                key={inst.id}
+                castShadow
+                position={[placement.x - ox, y, placement.y - oz]}
+                rotation={[0, (-placement.rotation * Math.PI) / 180, 0]}
+              >
+                <boxGeometry args={[w, COMP_H, h]} />
+                <meshStandardMaterial color={CATEGORY_COLOR[def.category] ?? "#475569"} roughness={0.6} />
+              </mesh>
+            );
+          })}
+
+          <OrbitControls enableDamping makeDefault target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.1} />
+        </Canvas>
+      </div>
+    </div>
+  );
+}

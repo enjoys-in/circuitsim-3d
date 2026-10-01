@@ -1,21 +1,25 @@
 .results {
   display: flex;
   flex-direction: column;
-  height: 270px;
   flex-shrink: 0;
   background: var(--panel);
   border-top: 1px solid var(--border);
 }
 
-.results--collapsed {
-  height: auto;
-}
-
 .results__body {
-  flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 10px 14px;
+  height: 232px;
+  transition: height 220ms ease, padding 200ms ease, opacity 160ms ease;
+}
+
+.results__body--collapsed {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .results__body--updating {

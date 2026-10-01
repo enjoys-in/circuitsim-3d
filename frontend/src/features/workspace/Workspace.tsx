@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
+import { cx } from "../../shared/lib/format";
 import { AsyncBoundary } from "../../shared/ui/AsyncBoundary";
 import Board from "../board/Board";
 import { BoardSkeleton } from "../board/BoardSkeleton";
@@ -13,7 +14,6 @@ import { SimulationProvider } from "../simulation/SimulationProvider";
 import { SimulationSound } from "../sound/SimulationSound";
 import { WorkspaceTabs } from "./WorkspaceTabs";
 import { WorkspaceUiProvider, useWorkspaceUi } from "./WorkspaceUiContext";
-import { useWorkspaceMode } from "./useWorkspaceMode";
 import "./workspace.css";
 
 const RightPanel = lazy(() => import("../inspector/RightPanel"));
@@ -22,8 +22,8 @@ const PcbView = lazy(() => import("../pcb/PcbView"));
 
 function RightSide() {
   const { panelCollapsed, togglePanel } = useWorkspaceUi();
-  if (panelCollapsed) {
-    return (
+  return (
+    <div className={cx("right-dock", panelCollapsed && "right-dock--collapsed")}>
       <button
         type="button"
         className="panel-reopen"
@@ -33,46 +33,53 @@ function RightSide() {
       >
         ‹
       </button>
-    );
-  }
+      <div className="right-dock__panel" aria-hidden={panelCollapsed}>
+        <AsyncBoundary name="Panel" fallback={<InspectorSkeleton />}>
+          <RightPanel />
+        </AsyncBoundary>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceBody() {
+  const { mode, setMode } = useWorkspaceUi();
+  const schematic = mode === "schematic";
   return (
-    <AsyncBoundary name="Panel" fallback={<InspectorSkeleton />}>
-      <RightPanel />
-    </AsyncBoundary>
+    <>
+      <SimulationSound />
+      <div className="workspace">
+        <div className="workspace__main">
+          <WorkspaceTabs mode={mode} onChange={setMode} />
+          {schematic ? (
+            <Board />
+          ) : (
+            <AsyncBoundary name="PCB editor" fallback={<BoardSkeleton />}>
+              <PcbView />
+            </AsyncBoundary>
+          )}
+          {schematic && (
+            <AsyncBoundary name="Results" fallback={<ResultsSkeleton />}>
+              <ResultsDock />
+            </AsyncBoundary>
+          )}
+        </div>
+        <RightSide />
+      </div>
+      <CodeSheet />
+      <LevelGallery />
+    </>
   );
 }
 
 export default function Workspace() {
-  const [mode, setMode] = useWorkspaceMode();
-  const schematic = mode === "schematic";
-
   return (
     <ReactFlowProvider>
       <CircuitGraphProvider>
         <SimulationProvider>
           <PcbProvider>
             <WorkspaceUiProvider>
-              <SimulationSound />
-              <div className="workspace">
-                <div className="workspace__main">
-                  <WorkspaceTabs mode={mode} onChange={setMode} />
-                  {schematic ? (
-                    <Board />
-                  ) : (
-                    <AsyncBoundary name="PCB editor" fallback={<BoardSkeleton />}>
-                      <PcbView />
-                    </AsyncBoundary>
-                  )}
-                  {schematic && (
-                    <AsyncBoundary name="Results" fallback={<ResultsSkeleton />}>
-                      <ResultsDock />
-                    </AsyncBoundary>
-                  )}
-                </div>
-                <RightSide />
-              </div>
-              <CodeSheet />
-              <LevelGallery />
+              <WorkspaceBody />
             </WorkspaceUiProvider>
           </PcbProvider>
         </SimulationProvider>

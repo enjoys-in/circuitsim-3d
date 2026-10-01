@@ -4,6 +4,7 @@ from app.domain.entities.component import ComponentCategory
 from app.seed.catalog.analog import ACTUATORS, PASSIVES, POWER, SEMICONDUCTORS
 from app.seed.catalog.breadboard import BREADBOARD
 from app.seed.catalog.builder import Entry, component
+from app.seed.catalog.connectors import CONNECTORS
 from app.seed.catalog.embedded import BOARDS, PERIPHERALS, SENSORS
 from app.seed.catalog.logic import LOGIC
 from app.seed.catalog.sensors_robu import SENSORS_ROBU
@@ -28,6 +29,7 @@ CATALOG: list[Entry] = [
     *BOARDS,
     *LOGIC,
     *BREADBOARD,
+    *CONNECTORS,
     BOARD_OUTLINE,
 ]
 

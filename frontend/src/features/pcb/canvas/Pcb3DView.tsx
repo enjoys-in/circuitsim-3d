@@ -1,4 +1,5 @@
-import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { cx } from "../../../shared/lib/format";
 import { usePcb } from "../PcbContext";
 import { Footprint } from "./Footprint";
 import type { PadInfo } from "../model/nets";
@@ -48,6 +49,45 @@ export function Pcb3DView() {
     return map;
   }, [pcb.pads]);
 
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const [rot, setRot] = useState({ x: 58, z: -28 });
+  const [zoom, setZoom] = useState(0.82);
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Native non-passive wheel so scroll zooms the board instead of the page.
+  useEffect(() => {
+    const el = sceneRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((z) => Math.min(2.4, Math.max(0.3, z - e.deltaY * 0.0012)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    setRot((r) => ({ x: Math.min(89, Math.max(0, r.x - dy * 0.4)), z: r.z + dx * 0.4 }));
+  };
+  const endDrag = () => {
+    dragStart.current = null;
+    setDragging(false);
+  };
+  const resetView = () => {
+    setRot({ x: 58, z: -28 });
+    setZoom(0.82);
+  };
+
   const board2d = (
     <>
       <rect className="pcb-board" x={0} y={0} width={board.width} height={board.height} rx={8} />
@@ -61,10 +101,26 @@ export function Pcb3DView() {
         <button type="button" className="btn btn--sm" onClick={() => setExploded((e) => !e)}>
           {exploded ? "Stack layers" : "Explode layers"}
         </button>
-        <span className="pcb3d__hint">Top copper · substrate · bottom copper · components</span>
+        <button type="button" className="btn btn--sm" onClick={resetView}>
+          Reset view
+        </button>
+        <span className="pcb3d__hint">drag to orbit · scroll to zoom</span>
       </div>
-      <div className="pcb3d__scene">
-        <div className="pcb3d__board">
+      <div
+        ref={sceneRef}
+        className={cx("pcb3d__scene", dragging && "pcb3d__scene--dragging")}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+      >
+        <div
+          className="pcb3d__board"
+          style={{
+            transform: `rotateX(${rot.x}deg) rotateZ(${rot.z}deg) scale(${zoom})`,
+            transition: dragging ? "none" : undefined,
+          }}
+        >
           <Layer z={-gap} label="Bottom copper" viewBox={viewBox} width={width} height={height}>
             {board2d}
             <TraceLayer
@@ -105,9 +161,12 @@ export function Pcb3DView() {
                   instanceId={inst.id}
                   label={inst.label}
                   def={def}
+                  params={inst.params}
                   placement={placement}
                   pads={padsByInstance.get(inst.id) ?? []}
                   selected={false}
+                  selectedPadId={null}
+                  render="wire"
                   highlightNet={null}
                   onBodyPointerDown={noop}
                   onPadPointerDown={noop}

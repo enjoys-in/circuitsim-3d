@@ -3,12 +3,14 @@ import { Button } from "../../shared/ui/Button";
 import { EXAMPLE_GROUPS } from "../examples/examples";
 import { useExampleLoader } from "../examples/useExampleLoader";
 import { ExportMenu } from "../export/ExportMenu";
+import { usePcb } from "../pcb/PcbContext";
 import { ProjectMenu } from "../projects/ProjectMenu";
 import { SimulationControls } from "../simulation/SimulationControls";
 import { useSimulation } from "../simulation/SimulationContext";
 import { SoundToggle } from "../sound/SoundToggle";
 import { useWorkspaceUi } from "../workspace/WorkspaceUiContext";
 import { useCircuitActions } from "./CircuitGraphContext";
+import { useCircuitGraph } from "./CircuitGraphContext";
 import { ZoomControl } from "./ZoomControl";
 
 function StatusBadge() {
@@ -27,7 +29,14 @@ function StatusBadge() {
 export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
-  const { openCode } = useWorkspaceUi();
+  const { circuit } = useCircuitGraph();
+  const { openCode, setMode } = useWorkspaceUi();
+  const { autoArrange } = usePcb();
+
+  const convertToPcb = () => {
+    autoArrange();
+    setMode("pcb");
+  };
 
   return (
     <div className="board-toolbar">
@@ -37,6 +46,14 @@ export function BoardToolbar() {
         <StatusBadge />
         <ProjectMenu />
         <ExportMenu />
+        <Button
+          size="sm"
+          onClick={convertToPcb}
+          disabled={circuit.instances.length === 0}
+          title="Place every part on the PCB and open the PCB editor"
+        >
+          Convert to PCB →
+        </Button>
         <select
           className="board-toolbar__examples"
           value=""

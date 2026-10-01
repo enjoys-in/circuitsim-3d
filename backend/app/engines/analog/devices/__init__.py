@@ -61,8 +61,18 @@ DEVICE_FACTORIES: dict[str, DeviceFactory] = {
 }
 
 SOURCE_KEYS = frozenset({"dc_supply", "battery_lipo"})
-# Structural parts (e.g. breadboard) carry no device; they only provide connectivity.
-STRUCTURAL_KEYS = frozenset({"breadboard_half"})
+# Structural parts (e.g. breadboard, connectors) carry no device; they only provide connectivity.
+STRUCTURAL_KEYS = frozenset(
+    {
+        "breadboard_half",
+        "header_male_1x2",
+        "header_male_1x4",
+        "header_female_1x4",
+        "usb_a",
+        "usb_b",
+        "usb_c",
+    }
+)
 ANALOG_KEYS = frozenset(DEVICE_FACTORIES) | {"ground"} | STRUCTURAL_KEYS
 
 __all__ = [
