@@ -137,6 +137,20 @@
   color: var(--muted);
 }
 
+.pin-chip--wired {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+}
+
+.pin-chip__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
 .pin-chip--power {
   border-color: #7f1d1d;
   color: #fca5a5;

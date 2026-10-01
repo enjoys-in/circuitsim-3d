@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { cx } from "../../shared/lib/format";
 import { Button } from "../../shared/ui/Button";
 import { TextField } from "../../shared/ui/Field";
-import { useCircuitActions } from "../board/CircuitGraphContext";
+import { useCircuitActions, useCircuitGraph } from "../board/CircuitGraphContext";
 import type { PartNodeType } from "../board/nodes/types";
 import { usePresets } from "../presets/PresetsContext";
 import { useLiveInstance } from "../simulation/SimulationContext";
@@ -12,11 +13,32 @@ import { describeParams } from "./paramSchema";
 export function NodeInspector({ node }: { node: PartNodeType }) {
   const { def, label, params } = node.data;
   const { updateParams, setLabel, removeNode, rotateNode, flipNode } = useCircuitActions();
+  const { nodes, edges } = useCircuitGraph();
   const { addPreset } = usePresets();
   const state = useLiveInstance(node.id);
   const descriptors = useMemo(() => describeParams(def, params), [def, params]);
   const [naming, setNaming] = useState(false);
   const [presetName, setPresetName] = useState("");
+  const labelOf = (id: string) => nodes.find((n) => n.id === id)?.data.label ?? id;
+
+  // Map each pin to the wire(s) attached to it, so a connected pin shows its wire colour.
+  const wiredPins = useMemo(() => {
+    const map = new Map<string, { color: string; to: string[] }>();
+    for (const edge of edges) {
+      const ends: [string | null | undefined, string | null | undefined, string, string][] = [
+        [edge.source, edge.sourceHandle, edge.target, edge.targetHandle ?? ""],
+        [edge.target, edge.targetHandle, edge.source, edge.sourceHandle ?? ""],
+      ];
+      for (const [nid, handle, otherId, otherHandle] of ends) {
+        if (nid !== node.id || !handle) continue;
+        const entry = map.get(handle) ?? { color: edge.data?.color ?? "#22c55e", to: [] };
+        entry.to.push(`${labelOf(otherId as string)}.${otherHandle}`);
+        map.set(handle, entry);
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edges, node.id, nodes]);
 
   const savePreset = () => {
     const name = presetName.trim();
@@ -74,11 +96,20 @@ export function NodeInspector({ node }: { node: PartNodeType }) {
       <section className="inspector__section">
         <h4 className="panel-heading">Pins</h4>
         <div className="inspector__pins">
-          {def.pins.map((pin) => (
-            <span key={pin.name} className={`pin-chip pin-chip--${pin.direction}`} title={pin.direction}>
-              {pin.name}
-            </span>
-          ))}
+          {def.pins.map((pin) => {
+            const wired = wiredPins.get(pin.name);
+            return (
+              <span
+                key={pin.name}
+                className={cx("pin-chip", `pin-chip--${pin.direction}`, wired && "pin-chip--wired")}
+                title={wired ? `${pin.direction} → ${wired.to.join(", ")}` : `${pin.direction} · unconnected`}
+                style={wired ? { borderColor: wired.color, color: wired.color } : undefined}
+              >
+                {wired && <span className="pin-chip__dot" style={{ background: wired.color }} />}
+                {pin.name}
+              </span>
+            );
+          })}
         </div>
       </section>
 
