@@ -1,24 +1,33 @@
-[tool.poetry]
+[project]
 name = "circuitsim-backend"
 version = "0.1.0"
 description = "Open-source AI electronics simulator backend (FastAPI)"
-authors = ["CircuitSim <dev@circuitsim.local>"]
+authors = [{ name = "CircuitSim", email = "dev@circuitsim.local" }]
 readme = "README.md"
-packages = [{ include = "app" }]
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "sqlalchemy>=2.0.30",
+    "asyncpg>=0.29",
+    "aiosqlite>=0.20",
+    "alembic>=1.13",
+    "python-multipart>=0.0.9",
+    "greenlet>=3.0",
+    "mcp>=2,<3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-fastapi = ">=0.115"
-uvicorn = { extras = ["standard"], version = ">=0.30" }
-pydantic = ">=2.7"
-pydantic-settings = ">=2.3"
-sqlalchemy = ">=2.0.30"
-asyncpg = ">=0.29"
-aiosqlite = ">=0.20"
-alembic = ">=1.13"
-python-multipart = ">=0.0.9"
-greenlet = ">=3.0"
-mcp = ">=2,<3"
+[project.scripts]
+seed = "app.seed.seeder:main"
+
+# App deployed from source (entrypoint app.main:app) — don't build/install the root package.
+[tool.uv]
+package = false
+
+[tool.poetry]
+packages = [{ include = "app" }]
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.5"
@@ -27,11 +36,8 @@ pytest = ">=8.2"
 pytest-asyncio = ">=0.23"
 httpx = ">=0.27"
 
-[tool.poetry.scripts]
-seed = "app.seed.seeder:main"
-
 [build-system]
-requires = ["poetry-core>=1.8"]
+requires = ["poetry-core>=2.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]

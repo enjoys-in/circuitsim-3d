@@ -31,7 +31,7 @@ real **three.js 3D** view — all in one app.
 ## Features
 
 ### Schematic & simulation
-- Drag parts from a 120+ component library, wire pins, and simulate live.
+- Drag parts from a 130+ component library, wire pins, and simulate live.
 - **Three engines**, auto-selected per circuit:
   - **Analog** — modified nodal analysis with Newton iteration (diodes, LEDs, BJTs,
     MOSFETs, regulators) and backward-Euler transients for RC/RL curves.
@@ -39,6 +39,8 @@ real **three.js 3D** view — all in one app.
     fix-point settling and per-tick timing waveforms.
   - **MCU** — runs board firmware tick-by-tick in a sandboxed Python subset against the
     analog network (ESP32 blink / thermostat / button / OLED / servo examples).
+- **Code & Flash editor** — write MCU firmware in a built-in Monaco editor with one-click
+  **Check** (server-side validation), **Flash**, **Download .py**, and **Reset to default**.
 - Live results: node values, waveforms, serial console, and playback scrubbing.
 - Ready-made examples across analog, power, digital, **computer (ALU + CPUs)**, and MCU.
 
@@ -47,6 +49,13 @@ real **three.js 3D** view — all in one app.
   (resistor, capacitor, LED, source, diode, inductor, potentiometer, push button) so it
   simulates electrically while keeping its own name and artwork.
 - Save presets ("My Parts") and reuse "Common parts".
+
+### Real parts & vendor catalog
+- 40+ **parametric sensor types** (ultrasonic, IMU, gas, PIR, pressure, flow, load cell,
+  …) with editable readings and a **“View on robu.in”** buy link in the inspector.
+- **Import from store** — browse/search **thousands of real [robu.in](https://robu.in)
+  parts** by category and import any one **on demand**; it drops straight into the palette
+  ready to place, linked back to its product page.
 
 ### PCB editor
 - **Convert to PCB** places every schematic part on the board, or drop parts directly
@@ -57,6 +66,11 @@ real **three.js 3D** view — all in one app.
   and rotation, and a **resizable body outline**.
 - Copper routing with vias, **layer-aware connectivity** (cross-layer only through a pad
   or via) and **DRC** including clearance and **short** (crossing-trace) detection.
+- **Auto-route** every connection, then **reshape traces by hand** — drag a route to bend
+  it, double-click to add a joint, right-click a joint to remove.
+- **Undo / redo** the whole layout with `Ctrl+Z` / `Ctrl+Y`.
+- **Export the board as a PNG** (download or copy to clipboard); copper running under a
+  component shows through as a faded dotted ghost.
 - **Wire / Real** render modes (pads & traces vs. real component artwork).
 - **Connectors**: male/female headers and USB-A / USB-B / USB-C.
 - **Switches**: SPDT, slide, and 4-way DIP.
@@ -68,8 +82,9 @@ real **three.js 3D** view — all in one app.
 ### AI assistant (optional)
 - Describe a circuit in plain English and the assistant builds it, wires it, runs the
   simulation and drops it on your board. Grounded in the real component catalog.
-- Uses an **OpenAI-compatible** chat API with the key read from the environment
-  (`OPENAI_API_KEY`); the panel stays gracefully disabled until a key is configured.
+- **Multi-provider**: Groq, Gemini, Mistral, OpenRouter, NVIDIA, OpenAI or Anthropic —
+  add any one key (e.g. `GROQ_API_KEY`) and switch the **provider & model per request**
+  right from the panel. Stays gracefully disabled until a key is configured.
 
 ### Projects & export
 - Save / load projects; export BOM (CSV), netlist, and circuit JSON.
@@ -153,6 +168,7 @@ The backend can serve the built frontend from `dist/` at `/` for a single-origin
 
 ## Project status
 
-Actively developed. Simulation (analog/digital/MCU), the PCB editor (routing, DRC,
-Wire/Real, 3D), custom parts, connectors, and switches are working end to end. See the
-in-app examples for a tour across every engine.
+Actively developed. Simulation (analog/digital/MCU), the firmware **Code & Flash** editor,
+the PCB editor (routing, DRC, hand-editable traces, undo/redo, PNG export, 3D), the
+multi-provider AI assistant, and **on-demand part import** from robu.in are working end to
+end. See the in-app examples for a tour across every engine.
