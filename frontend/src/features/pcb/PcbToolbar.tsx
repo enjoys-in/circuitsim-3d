@@ -96,6 +96,15 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
         <Button size="sm" onClick={pcb.autoArrange}>
           Auto-place
         </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={pcb.connectivity.airwires.length === 0}
+          onClick={() => pcb.autoRoute(pcb.connectivity.airwires)}
+          title="Lay copper for every unrouted pin connection"
+        >
+          Auto-route
+        </Button>
         <Button size="sm" onClick={pcb.clearRoutes}>
           Clear routes
         </Button>

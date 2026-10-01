@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { snapPoint } from "./model/geometry";
-import type { Layer, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
+import type { Airwire, Layer, Point, RoutingSession, Trace, Via } from "./model/pcbTypes";
 import { DEFAULT_TRACE_WIDTH, otherLayer } from "./model/pcbTypes";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
@@ -29,6 +29,7 @@ export interface RoutingController {
   via: (point: Point) => void;
   end: (point: Point, netId?: string | null) => boolean;
   abort: () => void;
+  autoRoute: (airwires: Airwire[]) => void;
   deleteTrace: (id: string) => void;
   deleteVia: (id: string) => void;
   clearRoutes: () => void;
@@ -108,6 +109,22 @@ export function useRouting(): RoutingController {
         return ok;
       },
       abort: () => setRouting(null),
+      // Lay an L-shaped copper trace for every remaining pin-to-pin connection.
+      // Alternate layers so crossing traces land on different copper (no shorts).
+      autoRoute: (airwires) => {
+        if (airwires.length === 0) return;
+        const other = otherLayer(activeLayer);
+        setTraces((prev) => [
+          ...prev,
+          ...airwires.map((aw, i) => ({
+            id: uid("t"),
+            netId: aw.netId,
+            layer: i % 2 === 0 ? activeLayer : other,
+            width: traceWidth,
+            points: [aw.a, { x: aw.b.x, y: aw.a.y }, aw.b],
+          })),
+        ]);
+      },
       deleteTrace: (id) => setTraces((prev) => prev.filter((t) => t.id !== id)),
       deleteVia: (id) => setVias((prev) => prev.filter((v) => v.id !== id)),
       clearRoutes: () => {
