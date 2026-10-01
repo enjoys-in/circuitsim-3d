@@ -74,7 +74,7 @@ export function PcbCanvas() {
             def={def}
             placement={placement}
             pads={padsByInstance.get(inst.id) ?? []}
-            selected={false}
+            selected={pcb.selectedId === inst.id}
             highlightNet={highlightNet}
             onBodyPointerDown={interaction.onBodyPointerDown}
             onPadPointerDown={interaction.onPadPointerDown}

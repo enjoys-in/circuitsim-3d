@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { usePersistentState } from "../../shared/hooks/usePersistentState";
 
 interface WorkspaceUiValue {
   codeOpen: boolean;
@@ -7,6 +8,8 @@ interface WorkspaceUiValue {
   examplesOpen: boolean;
   openExamples: () => void;
   closeExamples: () => void;
+  panelCollapsed: boolean;
+  togglePanel: () => void;
 }
 
 const WorkspaceUiContext = createContext<WorkspaceUiValue | null>(null);
@@ -14,6 +17,7 @@ const WorkspaceUiContext = createContext<WorkspaceUiValue | null>(null);
 export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [codeOpen, setCodeOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = usePersistentState<boolean>("circuitsim.panelCollapsed", false);
   const value = useMemo<WorkspaceUiValue>(
     () => ({
       codeOpen,
@@ -22,8 +26,10 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       examplesOpen,
       openExamples: () => setExamplesOpen(true),
       closeExamples: () => setExamplesOpen(false),
+      panelCollapsed,
+      togglePanel: () => setPanelCollapsed((v) => !v),
     }),
-    [codeOpen, examplesOpen],
+    [codeOpen, examplesOpen, panelCollapsed, setPanelCollapsed],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }

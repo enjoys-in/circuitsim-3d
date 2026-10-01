@@ -27,6 +27,14 @@ const FACTORIES: Record<string, PartFactory> = {
 
 function fallback(def: ComponentDef): PartFactory {
   if (def.category === "dev_board") return devBoard;
+  if (def.key.startsWith("custom_")) {
+    const leftPins = def.pins.filter((p) => p.direction !== "output").map((p) => p.name);
+    return moduleFactory({
+      color: "teal",
+      title: def.name.slice(0, 16).toUpperCase(),
+      leftPins: leftPins.length > 0 ? leftPins : undefined,
+    });
+  }
   return moduleFactory({ color: "blue", title: def.name.slice(0, 16).toUpperCase() });
 }
 

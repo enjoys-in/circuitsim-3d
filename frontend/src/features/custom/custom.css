@@ -1,0 +1,123 @@
+.custom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.custom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.custom-field input {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.custom-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.custom-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-row input,
+.custom-row select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.custom-row__name {
+  flex: 1;
+}
+
+.custom-row__val {
+  flex: 1;
+}
+
+.custom-row select {
+  flex: 0 0 auto;
+}
+
+.custom-row__del {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.custom-row__del:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.custom-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.custom-error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.palette-create {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10.5px;
+  min-height: 78px;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.palette-create:hover {
+  border-color: var(--accent, #2dd4bf);
+  color: var(--text);
+}
+
+.palette-create__plus {
+  font-size: 20px;
+  line-height: 1;
+}

@@ -7,6 +7,7 @@ from app.domain.entities.project import Circuit
 from app.engines.analog.devices import ANALOG_KEYS, Device, VoltageSource
 from app.engines.analog.devices.semiconductors import Led
 from app.engines.analog.network import AnalogNetwork
+from app.engines.custom import simulatable_keys
 from app.engines.result import ResultBuilder
 
 MAX_SERIES = 16
@@ -29,7 +30,7 @@ class AnalogEngine(SimulationEngine):
     name = "analog"
 
     def supports(self, circuit: Circuit) -> bool:
-        keys = {i.component_key for i in circuit.instances}
+        keys = simulatable_keys(circuit)
         return bool(keys - {"ground"}) and keys <= ANALOG_KEYS
 
     def run(self, circuit: Circuit, options: dict[str, Any]) -> dict[str, Any]:

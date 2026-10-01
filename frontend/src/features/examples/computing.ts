@@ -132,4 +132,47 @@ export const COMPUTING_EXAMPLES: Example[] = [
     ),
     options: { ticks: 24 },
   },
+  {
+    id: "stored-program-cpu",
+    title: "Stored-program CPU",
+    category: "Digital",
+    description:
+      "A real fetch-execute machine: the PC steps through program ROM, the opcode ROM decodes each " +
+      "instruction into an ALU operation (ADD/SUB/AND/OR/SHL) and the accumulator holds the running result. " +
+      "Program: ADD 3, ADD 5, SUB 2, SHL, AND 9, OR 1 → 9.",
+    circuit: build(
+      [
+        ["CLK", "clock", 0, 140, { period: 2 }],
+        ["ZERO", "input", 0, 260, { value: 0 }],
+        ["ONE", "input", 0, 320, { value: 1 }],
+        ["PC", "counter4", 220, 0],
+        // Harvard program store: opcodes and operands share the PC address.
+        ["ROP", "rom16", 220, 180, { data: [0, 0, 1, 6, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }],
+        ["RARG", "rom16", 220, 380, { data: [3, 5, 2, 0, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }],
+        ["ALU", "alu4", 480, 120],
+        ["ACC", "register4", 480, 380],
+        ...probes("PC", 740, -20),
+        ...probes("ACC", 880, -20),
+      ],
+      [
+        ["CLK:out", "PC:clk"],
+        ["CLK:out", "ACC:clk"],
+        ["ZERO:out", "PC:reset"],
+        ...bus("PC", "q", "ROP", "a"),
+        ...bus("PC", "q", "RARG", "a"),
+        // opcode (3 bits) decodes the ALU operation
+        ["ROP:d0", "ALU:op0"],
+        ["ROP:d1", "ALU:op1"],
+        ["ROP:d2", "ALU:op2"],
+        ...bus("RARG", "d", "ALU", "b"),
+        ...bus("ACC", "q", "ALU", "a"),
+        ...bus("ALU", "y", "ACC", "d"),
+        ["ONE:out", "ACC:en"],
+        ["ZERO:out", "ALU:cin"],
+        ...probeWires("PC", "q", "PC"),
+        ...probeWires("ACC", "q", "ACC"),
+      ],
+    ),
+    options: { ticks: 28 },
+  },
 ];

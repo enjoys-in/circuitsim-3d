@@ -7,6 +7,7 @@ from app.domain.entities.project import Circuit, ComponentInstance
 from app.engines.analog.devices import ANALOG_KEYS
 from app.engines.analog.network import AnalogNetwork
 from app.engines.analog.units import format_si
+from app.engines.custom import simulatable_keys
 from app.engines.mcu.boards import BOARD_KEYS, BOARD_PROFILES
 from app.engines.mcu.peripherals import (
     DISPLAY_KEYS,
@@ -337,7 +338,7 @@ class McuEngine(SimulationEngine):
     name = "mcu"
 
     def supports(self, circuit: Circuit) -> bool:
-        keys = {i.component_key for i in circuit.instances}
+        keys = simulatable_keys(circuit)
         return bool(keys & BOARD_KEYS) and keys <= (
             BOARD_KEYS | SENSOR_KEYS | ANALOG_KEYS | PERIPHERAL_KEYS
         )

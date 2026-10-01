@@ -3,6 +3,8 @@ import type { Circuit, SimulationOptions, SimulationOutput } from "../../domain"
 import { errorMessage, isAbort, simulationService } from "../../services";
 import { LIVE_DEBOUNCE_MS } from "../../shared/constants";
 import { useDebouncedEffect } from "../../shared/hooks/useDebouncedEffect";
+import { useCatalog } from "../catalog/CatalogContext";
+import { toSimulationCircuit } from "../custom/toSimulationCircuit";
 import type { RunStatus } from "./SimulationContext";
 
 export const DEFAULT_OPTIONS: SimulationOptions = {
@@ -20,25 +22,29 @@ export function useSimulationRunner(circuit: Circuit, circuitKey: string) {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<RunStatus>("idle");
   const [ranKey, setRanKey] = useState<string | null>(null);
+  const { byKey } = useCatalog();
   const circuitRef = useRef(circuit);
   const keyRef = useRef(circuitKey);
   const optionsRef = useRef(options);
+  const byKeyRef = useRef(byKey);
   const controllerRef = useRef<AbortController | null>(null);
   circuitRef.current = circuit;
   keyRef.current = circuitKey;
   optionsRef.current = options;
+  byKeyRef.current = byKey;
 
   const run = useCallback(async () => {
     controllerRef.current?.abort();
-    const current = circuitRef.current;
+    const source = circuitRef.current;
     const key = keyRef.current;
-    if (current.instances.length === 0) {
+    if (source.instances.length === 0) {
       setResult(null);
       setError(null);
       setStatus("idle");
       setRanKey(key);
       return;
     }
+    const current = toSimulationCircuit(source, byKeyRef.current);
     const controller = new AbortController();
     controllerRef.current = controller;
     setStatus("running");

@@ -35,8 +35,20 @@ export function collectPads(
   catalog: ReadonlyMap<string, ComponentDef>,
   placements: Map<string, Placement>,
 ): PadInfo[] {
-  const netOf = new Map<string, string>();
-  for (const net of circuit.nets) for (const endpoint of net.endpoints) netOf.set(endpoint, net.id);
+  // Wires that share a pin belong to one electrical net; union them so a pin with
+  // several wires resolves to a single net (not just the last wire seen).
+  const nets = new DSU();
+  const hasNet = new Set<string>();
+  for (const net of circuit.nets) {
+    const [first, ...rest] = net.endpoints;
+    if (!first) continue;
+    hasNet.add(first);
+    nets.find(first);
+    for (const endpoint of rest) {
+      hasNet.add(endpoint);
+      nets.union(first, endpoint);
+    }
+  }
 
   const pads: PadInfo[] = [];
   for (const inst of circuit.instances) {
@@ -50,7 +62,7 @@ export function collectPads(
         id,
         instanceId: inst.id,
         name: pad.name,
-        netId: netOf.get(id) ?? null,
+        netId: hasNet.has(id) ? nets.find(id) : null,
         point: padWorld({ x: pad.x, y: pad.y }, placement, footprint),
       });
     }
@@ -108,24 +120,38 @@ export function analyzeNets(pads: PadInfo[], traces: Trace[], vias: Via[]): Conn
 
 // Greedy MST over pads, skipping pairs already joined by copper (same DSU root).
 function mstAirwires(netId: string, pads: PadInfo[], root: (id: string) => string): Airwire[] {
-  const group = new Map<string, string>();
-  const rep = (id: string) => group.get(id) ?? id;
-  const merge = (a: string, b: string) => group.set(rep(a), rep(b));
-  for (const pad of pads) group.set(pad.id, root(pad.id));
+  const parent = new Map<string, string>();
+  const find = (id: string): string => {
+    const p = parent.get(id);
+    if (p === undefined || p === id) return p ?? id;
+    const r = find(p);
+    parent.set(id, r);
+    return r;
+  };
+  const union = (a: string, b: string) => parent.set(find(a), find(b));
+
+  // Pre-merge pads already connected by copper (shared connectivity root).
+  const copperRep = new Map<string, string>();
+  for (const pad of pads) {
+    const cr = root(pad.id);
+    const rep = copperRep.get(cr);
+    if (rep) union(rep, pad.id);
+    else copperRep.set(cr, pad.id);
+  }
 
   const wires: Airwire[] = [];
   for (let step = 0; step < pads.length - 1; step++) {
     let best: { a: PadInfo; b: PadInfo; d: number } | null = null;
     for (let i = 0; i < pads.length; i++) {
       for (let j = i + 1; j < pads.length; j++) {
-        if (rep(pads[i].id) === rep(pads[j].id)) continue;
+        if (find(pads[i].id) === find(pads[j].id)) continue;
         const d = distance(pads[i].point, pads[j].point);
         if (!best || d < best.d) best = { a: pads[i], b: pads[j], d };
       }
     }
     if (!best) break;
-    merge(best.a.id, best.b.id);
-    if (root(best.a.id) !== root(best.b.id)) wires.push({ netId, a: best.a.point, b: best.b.point });
+    union(best.a.id, best.b.id);
+    wires.push({ netId, a: best.a.point, b: best.b.point });
   }
   return wires;
 }

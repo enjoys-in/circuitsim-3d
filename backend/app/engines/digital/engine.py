@@ -4,6 +4,7 @@ from typing import Any
 
 from app.domain.engines import SimulationEngine
 from app.domain.entities.project import Circuit
+from app.engines.custom import simulatable_keys
 from app.engines.digital.elements import (
     LOGIC_KEYS,
     Clock,
@@ -87,7 +88,7 @@ class DigitalEngine(SimulationEngine):
     name = "digital"
 
     def supports(self, circuit: Circuit) -> bool:
-        keys = {i.component_key for i in circuit.instances} - {"ground"}
+        keys = simulatable_keys(circuit) - {"ground"}
         return bool(keys) and keys <= LOGIC_KEYS
 
     def run(self, circuit: Circuit, options: dict[str, Any]) -> dict[str, Any]:

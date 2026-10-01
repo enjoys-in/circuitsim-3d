@@ -151,6 +151,15 @@
   stroke-width: 1.4;
 }
 
+/* Overlays must never swallow clicks meant for pads/traces underneath. */
+.route-preview__laid,
+.route-preview__pending,
+.route-preview__node,
+.drc-marker__halo,
+.drc-marker__x {
+  pointer-events: none;
+}
+
 .pcb-toolbar {
   display: flex;
   align-items: center;

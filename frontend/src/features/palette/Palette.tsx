@@ -3,6 +3,8 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { ErrorNotice } from "../../shared/ui/ErrorBoundary";
 import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { useCatalog } from "../catalog/CatalogContext";
+import { CustomComponentsSection } from "../custom/CustomComponentsSection";
+import { CommonPartsGroup } from "../presets/CommonPartsGroup";
 import { MyPartsGroup } from "../presets/MyPartsGroup";
 import { groupComponents } from "./groupComponents";
 import { PaletteGroup } from "./PaletteGroup";
@@ -43,6 +45,15 @@ export function Palette() {
       {status === "success" && groups.length === 0 && <EmptyState title="No parts match">Try another search.</EmptyState>}
       {status === "success" && (
         <div className="palette__groups">
+          <CustomComponentsSection
+            open={searching || Boolean(openMap.custom_components)}
+            onToggle={() => toggle("custom_components")}
+          />
+          <CommonPartsGroup
+            open={searching || Boolean(openMap.common)}
+            query={deferredQuery}
+            onToggle={() => toggle("common")}
+          />
           <MyPartsGroup
             open={searching || Boolean(openMap.myparts)}
             onToggle={() => toggle("myparts")}

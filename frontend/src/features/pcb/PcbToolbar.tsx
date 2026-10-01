@@ -17,6 +17,7 @@ export function PcbToolbar({ mode, onMode }: Props) {
   const pcb = usePcb();
   const errors = pcb.drc.filter((v) => v.kind !== "unrouted").length;
   const unrouted = pcb.netCount - pcb.connectivity.routedNets.size;
+  const selected = pcb.selectedId;
 
   return (
     <div className="pcb-toolbar">
@@ -67,8 +68,19 @@ export function PcbToolbar({ mode, onMode }: Props) {
         onCommit={pcb.setTraceWidth}
       />
 
+      <div className="pcb-toolbar__group">
+        <span className="pcb-toolbar__label">Part</span>
+        <Button size="sm" disabled={!selected} onClick={() => selected && pcb.rotateComponent(selected)}>
+          ⟳ Rotate
+        </Button>
+        <Button size="sm" disabled={!selected} onClick={() => selected && pcb.flipComponent(selected)}>
+          ⇋ Flip
+        </Button>
+      </div>
+
       <div className="pcb-toolbar__end">
         {pcb.routing && <span className="pcb-hint">routing — click pads/points, V = via, Esc = cancel</span>}
+        {!pcb.routing && selected && <span className="pcb-hint">part selected — R rotate, F flip, drag to move</span>}
         <span className={cx("status-badge", unrouted === 0 ? "status-badge--ok" : "status-badge--stale")}>
           {unrouted === 0 ? "fully routed" : `${unrouted} unrouted`}
         </span>

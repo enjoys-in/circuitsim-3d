@@ -12,13 +12,35 @@ import { ResultsSkeleton } from "../results/ResultsSkeleton";
 import { SimulationProvider } from "../simulation/SimulationProvider";
 import { SimulationSound } from "../sound/SimulationSound";
 import { WorkspaceTabs } from "./WorkspaceTabs";
-import { WorkspaceUiProvider } from "./WorkspaceUiContext";
+import { WorkspaceUiProvider, useWorkspaceUi } from "./WorkspaceUiContext";
 import { useWorkspaceMode } from "./useWorkspaceMode";
 import "./workspace.css";
 
 const RightPanel = lazy(() => import("../inspector/RightPanel"));
 const ResultsDock = lazy(() => import("../results/ResultsDock"));
 const PcbView = lazy(() => import("../pcb/PcbView"));
+
+function RightSide() {
+  const { panelCollapsed, togglePanel } = useWorkspaceUi();
+  if (panelCollapsed) {
+    return (
+      <button
+        type="button"
+        className="panel-reopen"
+        onClick={togglePanel}
+        title="Show panel"
+        aria-label="Show panel"
+      >
+        ‹
+      </button>
+    );
+  }
+  return (
+    <AsyncBoundary name="Panel" fallback={<InspectorSkeleton />}>
+      <RightPanel />
+    </AsyncBoundary>
+  );
+}
 
 export default function Workspace() {
   const [mode, setMode] = useWorkspaceMode();
@@ -47,9 +69,7 @@ export default function Workspace() {
                     </AsyncBoundary>
                   )}
                 </div>
-                <AsyncBoundary name="Panel" fallback={<InspectorSkeleton />}>
-                  <RightPanel />
-                </AsyncBoundary>
+                <RightSide />
               </div>
               <CodeSheet />
               <LevelGallery />

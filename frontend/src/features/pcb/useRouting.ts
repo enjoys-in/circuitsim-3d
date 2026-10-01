@@ -5,6 +5,12 @@ import { DEFAULT_TRACE_WIDTH, otherLayer } from "./model/pcbTypes";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
 
+export interface TraceEndpointUpdate {
+  traceId: string;
+  index: number;
+  point: Point;
+}
+
 export interface RoutingController {
   traces: Trace[];
   vias: Via[];
@@ -17,6 +23,7 @@ export interface RoutingController {
   setTraceWidth: (width: number) => void;
   toggleVisible: (layer: Layer) => void;
   selectTrace: (id: string | null) => void;
+  setTraceEndpoints: (updates: TraceEndpointUpdate[]) => void;
   begin: (netId: string, point: Point, from: string) => void;
   extend: (point: Point) => void;
   via: (point: Point) => void;
@@ -57,8 +64,24 @@ export function useRouting(): RoutingController {
       setTraceWidth,
       toggleVisible: (layer) => setVisible((v) => ({ ...v, [layer]: !v[layer] })),
       selectTrace,
+      // Move specific trace endpoints so copper follows a dragged/rotated part.
+      setTraceEndpoints: (updates) =>
+        setTraces((prev) => {
+          if (updates.length === 0) return prev;
+          const byTrace = new Map<string, Map<number, Point>>();
+          for (const u of updates) {
+            const m = byTrace.get(u.traceId) ?? new Map<number, Point>();
+            m.set(u.index, u.point);
+            byTrace.set(u.traceId, m);
+          }
+          return prev.map((t) => {
+            const m = byTrace.get(t.id);
+            return m ? { ...t, points: t.points.map((p, i) => m.get(i) ?? p) } : t;
+          });
+        }),
+      // Pads sit off the routing grid, so start/finish on the pad's exact point.
       begin: (netId, point, from) =>
-        setRouting({ netId, layer: activeLayer, points: [snapPoint(point)], from }),
+        setRouting({ netId, layer: activeLayer, points: [point], from }),
       extend: (point) => setRouting((r) => (r ? { ...r, points: [...r.points, snapPoint(point)] } : r)),
       via: (point) =>
         setRouting((r) => {
@@ -74,11 +97,12 @@ export function useRouting(): RoutingController {
         let ok = true;
         setRouting((r) => {
           if (!r) return null;
-          if (netId && netId !== r.netId) {
+          // Only finish on a pad of the same net — no loose ends, no cross-net joins.
+          if (netId !== r.netId) {
             ok = false;
             return r;
           }
-          commit(r, [...r.points, snapPoint(point)]);
+          commit(r, [...r.points, point]);
           return null;
         });
         return ok;

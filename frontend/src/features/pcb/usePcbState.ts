@@ -1,10 +1,16 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { Circuit, ComponentDef } from "../../domain";
 import { runDrc } from "./model/drc";
+import { getFootprint } from "./model/footprints";
+import { distance, padWorld } from "./model/geometry";
 import { analyzeNets, collectPads, type Connectivity, type PadInfo } from "./model/nets";
+import type { Placement } from "./model/pcbTypes";
+import { otherLayer } from "./model/pcbTypes";
 import type { DrcViolation } from "./model/pcbTypes";
 import { usePlacements, type PlacementController } from "./usePlacements";
 import { useRouting, type RoutingController } from "./useRouting";
+
+const PAD_SNAP = 2;
 
 export interface PcbState extends PlacementController, RoutingController {
   pads: PadInfo[];
@@ -37,8 +43,52 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
     [routing.traces, placement.board, connectivity.routedNets, netCount],
   );
 
+  // Re-anchor trace ends attached to a part's pads to where those pads land in
+  // the next placement — keeps copper joined through rotate/flip (no stale traces).
+  const reanchor = useCallback(
+    (id: string, next: Placement) => {
+      const inst = circuit.instances.find((i) => i.id === id);
+      const def = inst && catalog.get(inst.component_key);
+      if (!inst || !def) return;
+      const footprint = getFootprint(def);
+      const instPads = pads.filter((p) => p.instanceId === id);
+      const updates = [];
+      for (const trace of routing.traces) {
+        const ends = trace.points.length < 2 ? [0] : [0, trace.points.length - 1];
+        for (const index of ends) {
+          const pad = instPads.find((p) => distance(p.point, trace.points[index]) <= PAD_SNAP);
+          const local = pad && footprint.pads.find((fp) => fp.name === pad.name);
+          if (!local) continue;
+          updates.push({ traceId: trace.id, index, point: padWorld(local, next, footprint) });
+        }
+      }
+      if (updates.length) routing.setTraceEndpoints(updates);
+    },
+    [circuit, catalog, pads, routing],
+  );
+
+  const rotateComponent = useCallback(
+    (id: string) => {
+      const current = placement.placements.get(id);
+      if (!current) return;
+      reanchor(id, { ...current, rotation: (current.rotation + 90) % 360 });
+      placement.rotateComponent(id);
+    },
+    [placement, reanchor],
+  );
+
+  const flipComponent = useCallback(
+    (id: string) => {
+      const current = placement.placements.get(id);
+      if (!current) return;
+      reanchor(id, { ...current, side: otherLayer(current.side) });
+      placement.flipComponent(id);
+    },
+    [placement, reanchor],
+  );
+
   return useMemo(
-    () => ({ ...placement, ...routing, pads, connectivity, drc, netCount }),
-    [placement, routing, pads, connectivity, drc, netCount],
+    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount }),
+    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount],
   );
 }

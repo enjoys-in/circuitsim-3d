@@ -7,14 +7,25 @@ import {
   type PointerEvent,
   type WheelEvent,
 } from "react";
+import { distance, snap } from "../model/geometry";
 import type { PadInfo } from "../model/nets";
 import type { Point } from "../model/pcbTypes";
 import type { PcbState } from "../usePcbState";
 import type { PanZoom } from "./usePanZoom";
 
+const PAD_SNAP = 2;
+
+interface TraceAnchor {
+  traceId: string;
+  index: number;
+  base: Point;
+}
+
 interface DragState {
   instanceId: string;
   offset: Point;
+  start: Point;
+  anchors: TraceAnchor[];
 }
 
 export interface Interaction {
@@ -50,6 +61,27 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
     return () => window.removeEventListener("keydown", onKey);
   }, [pcb, cursor]);
 
+  // R rotates, F flips the selected part (when not routing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (routingRef.current) return;
+      const id = pcb.selectedId;
+      if (!id) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      const key = e.key.toLowerCase();
+      if (key === "r") {
+        e.preventDefault();
+        pcb.rotateComponent(id);
+      } else if (key === "f") {
+        e.preventDefault();
+        pcb.flipComponent(id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pcb]);
+
   const onPadPointerDown = useCallback(
     (e: PointerEvent, pad: PadInfo) => {
       e.stopPropagation();
@@ -68,8 +100,23 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
       }
       const placement = pcb.placements.get(instanceId);
       if (!placement) return;
+      pcb.selectComponent(instanceId);
       const board = view.toBoard(e.clientX, e.clientY);
-      drag.current = { instanceId, offset: { x: board.x - placement.x, y: board.y - placement.y } };
+      const padPts = pcb.pads.filter((p) => p.instanceId === instanceId).map((p) => p.point);
+      const anchors: TraceAnchor[] = [];
+      for (const trace of pcb.traces) {
+        const ends = trace.points.length < 2 ? [0] : [0, trace.points.length - 1];
+        for (const index of ends) {
+          const pt = trace.points[index];
+          if (padPts.some((pp) => distance(pp, pt) <= PAD_SNAP)) anchors.push({ traceId: trace.id, index, base: pt });
+        }
+      }
+      drag.current = {
+        instanceId,
+        offset: { x: board.x - placement.x, y: board.y - placement.y },
+        start: { x: placement.x, y: placement.y },
+        anchors,
+      };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
     [pcb, view],
@@ -77,8 +124,12 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
 
   const onSvgPointerDown = useCallback(
     (e: PointerEvent) => {
-      if (routingRef.current) pcb.extend(view.toBoard(e.clientX, e.clientY));
-      else pan.current = { x: e.clientX, y: e.clientY };
+      if (routingRef.current) {
+        pcb.extend(view.toBoard(e.clientX, e.clientY));
+        return;
+      }
+      pcb.selectComponent(null);
+      pan.current = { x: e.clientX, y: e.clientY };
     },
     [pcb, view],
   );
@@ -87,10 +138,19 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
     (e: PointerEvent) => {
       const board = view.toBoard(e.clientX, e.clientY);
       if (drag.current) {
-        pcb.moveComponent(drag.current.instanceId, {
-          x: board.x - drag.current.offset.x,
-          y: board.y - drag.current.offset.y,
-        });
+        const target = { x: board.x - drag.current.offset.x, y: board.y - drag.current.offset.y };
+        pcb.moveComponent(drag.current.instanceId, target);
+        if (drag.current.anchors.length) {
+          const dx = snap(target.x) - drag.current.start.x;
+          const dy = snap(target.y) - drag.current.start.y;
+          pcb.setTraceEndpoints(
+            drag.current.anchors.map((a) => ({
+              traceId: a.traceId,
+              index: a.index,
+              point: { x: a.base.x + dx, y: a.base.y + dy },
+            })),
+          );
+        }
       } else if (pan.current) {
         view.panBy(e.clientX - pan.current.x, e.clientY - pan.current.y);
         pan.current = { x: e.clientX, y: e.clientY };

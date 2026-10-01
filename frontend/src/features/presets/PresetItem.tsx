@@ -9,7 +9,7 @@ const PartThumbnail = lazy(() => import("../parts/PartThumbnail"));
 interface Props {
   preset: PartPreset;
   base: ComponentDef;
-  onRemove: () => void;
+  onRemove?: () => void;
 }
 
 export function PresetItem({ preset, base, onRemove }: Props) {
@@ -27,15 +27,17 @@ export function PresetItem({ preset, base, onRemove }: Props) {
       title={`${preset.name} — based on ${base.name}`}
       role="listitem"
     >
-      <button
-        type="button"
-        className="palette-item__remove"
-        aria-label={`Delete ${preset.name}`}
-        onClick={onRemove}
-        draggable={false}
-      >
-        ×
-      </button>
+      {onRemove && (
+        <button
+          type="button"
+          className="palette-item__remove"
+          aria-label={`Delete ${preset.name}`}
+          onClick={onRemove}
+          draggable={false}
+        >
+          ×
+        </button>
+      )}
       <div className="palette-item__thumb">
         <Suspense fallback={<Skeleton width={52} height={52} radius={8} />}>
           <PartThumbnail def={base} params={preset.params} />
