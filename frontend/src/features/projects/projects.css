@@ -1,0 +1,112 @@
+.projects {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.projects__save {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.projects__name {
+  flex: 1;
+  min-width: 160px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.projects__name:focus {
+  outline: none;
+  border-color: var(--accent, #2dd4bf);
+}
+
+.projects__error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.projects__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.projects__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.projects__item {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.projects__item--active {
+  border-color: var(--accent, #2dd4bf);
+}
+
+.projects__open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.projects__open:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.projects__item-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.projects__item-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.projects__delete {
+  width: 34px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.projects__delete:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.projects__delete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

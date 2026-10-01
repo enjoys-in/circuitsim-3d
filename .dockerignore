@@ -1,0 +1,34 @@
+# --- version control / editor ---
+.git
+.gitignore
+.github
+.vscode
+.idea
+**/.DS_Store
+
+# --- python ---
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/venv
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+backend/tests
+backend/scripts
+
+# --- node / frontend build artifacts (rebuilt in-image) ---
+**/node_modules
+frontend/dist
+backend/dist
+
+# --- runtime / generated data (scraped catalog, realtime db) ---
+backend/data
+**/*.db
+**/*.log
+
+# --- docs & misc not needed at runtime ---
+**/*.md
+!backend/README.md
+run.sh
+test

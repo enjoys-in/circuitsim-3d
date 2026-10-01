@@ -1,0 +1,58 @@
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.export__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.export__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.export__bom {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.export__bom thead th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+
+.export__bom td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.export__qty {
+  font-family: var(--mono);
+  color: var(--text);
+  width: 40px;
+}
+
+.export__value {
+  font-family: var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.export__refs {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}

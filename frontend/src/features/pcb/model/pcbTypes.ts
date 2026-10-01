@@ -1,0 +1,88 @@
+export type Layer = "top" | "bottom";
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export type PadShape = "round" | "rect" | "smd";
+
+export interface Pad {
+  name: string;
+  x: number;
+  y: number;
+  shape: PadShape;
+}
+
+export interface Footprint {
+  width: number;
+  height: number;
+  pads: Pad[];
+  outline: "box" | "circle" | "polar";
+}
+
+export interface Placement {
+  x: number;
+  y: number;
+  rotation: number;
+  side: Layer;
+}
+
+export interface Trace {
+  id: string;
+  netId: string;
+  layer: Layer;
+  width: number;
+  points: Point[];
+}
+
+export interface Via {
+  id: string;
+  netId: string;
+  x: number;
+  y: number;
+}
+
+export interface RoutingSession {
+  netId: string;
+  layer: Layer;
+  points: Point[];
+  from: string;
+}
+
+export interface Board {
+  width: number;
+  height: number;
+}
+
+export interface Airwire {
+  netId: string;
+  a: Point;
+  b: Point;
+}
+
+export interface DrcViolation {
+  id: string;
+  kind: "clearance" | "unrouted" | "overlap";
+  message: string;
+  at?: Point;
+}
+
+export const GRID = 10;
+export const DEFAULT_TRACE_WIDTH = 4;
+export const VIA_RADIUS = 4;
+export const PAD_HIT_RADIUS = 7;
+export const CLEARANCE = 3;
+
+export const LAYER_COLOR: Record<Layer, string> = {
+  top: "#e0533f",
+  bottom: "#3f7de0",
+};
+
+export function otherLayer(layer: Layer): Layer {
+  return layer === "top" ? "bottom" : "top";
+}
+
+export function padId(instanceId: string, padName: string): string {
+  return `${instanceId}:${padName}`;
+}
