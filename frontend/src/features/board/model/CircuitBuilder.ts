@@ -26,6 +26,7 @@ export class CircuitBuilder {
         id: edge.id,
         name: "",
         endpoints: [`${edge.source}:${edge.sourceHandle}`, `${edge.target}:${edge.targetHandle}`],
+        ...(edge.data?.waypoints?.length ? { waypoints: edge.data.waypoints } : {}),
       }));
     return this;
   }

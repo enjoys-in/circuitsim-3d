@@ -6,9 +6,10 @@ import { useLiveNet } from "../simulation/SimulationContext";
 
 export function WireInspector({ edge }: { edge: WireEdgeType }) {
   const { nodes } = useCircuitGraph();
-  const { removeEdge } = useCircuitActions();
+  const { removeEdge, setWaypoints } = useCircuitActions();
   const { engine, value } = useLiveNet(edge.id);
   const labelOf = (id: string) => nodes.find((n) => n.id === id)?.data.label ?? id;
+  const joints = edge.data?.waypoints?.length ?? 0;
   const reading =
     value === undefined || value === null ? "—" : engine === "digital" ? `logic ${value}` : formatSI(value, "V");
 
@@ -23,6 +24,18 @@ export function WireInspector({ edge }: { edge: WireEdgeType }) {
         </div>
         <span className="inspector__swatch" style={{ background: edge.data?.color }} />
       </header>
+      <section className="inspector__section">
+        <h4 className="panel-heading">Routing</h4>
+        <p className="inspector__muted">
+          Double-click the wire to add a join point, drag it to shape the route, double-click a
+          point to remove it.
+        </p>
+        {joints > 0 && (
+          <Button size="sm" onClick={() => setWaypoints(edge.id, [])}>
+            Straighten ({joints} point{joints === 1 ? "" : "s"})
+          </Button>
+        )}
+      </section>
       <section className="inspector__section">
         <h4 className="panel-heading">Live</h4>
         <dl className="readout">

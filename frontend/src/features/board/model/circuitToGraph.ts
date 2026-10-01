@@ -45,6 +45,7 @@ export function circuitToGraph(
           ],
           index,
         ),
+        waypoints: j === 0 ? net.waypoints : undefined,
       },
     }));
   });

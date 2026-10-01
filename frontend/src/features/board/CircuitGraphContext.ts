@@ -29,6 +29,7 @@ export interface CircuitActions {
   addPart: (def: ComponentDef, opts?: { params?: Params; label?: string; position?: Position }) => string;
   removeNode: (id: string) => void;
   removeEdge: (id: string) => void;
+  setWaypoints: (id: string, waypoints: Position[]) => void;
   duplicateNode: (id: string) => void;
   copyNode: (id: string) => void;
   pasteAt: (position: Position) => void;

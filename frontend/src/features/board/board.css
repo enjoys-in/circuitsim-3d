@@ -204,6 +204,22 @@
   pointer-events: none;
 }
 
+.wire__joint {
+  fill: #fbbf24;
+  stroke: #0b1220;
+  stroke-width: 1.5;
+  cursor: grab;
+  pointer-events: all;
+}
+
+.wire__joint:hover {
+  fill: #fde68a;
+}
+
+.wire__joint:active {
+  cursor: grabbing;
+}
+
 .wire__label {
   position: absolute;
   padding: 1px 6px;

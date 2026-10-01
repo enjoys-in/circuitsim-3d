@@ -86,6 +86,12 @@ export function useGraphActions(
         setEdges((prev) => prev.filter((e) => e.source !== id && e.target !== id));
       },
       removeEdge: (id) => setEdges((prev) => prev.filter((e) => e.id !== id)),
+      setWaypoints: (id, waypoints) =>
+        setEdges((prev) =>
+          prev.map((e) =>
+            e.id === id ? { ...e, data: { ...(e.data ?? { color: "#22c55e" }), waypoints } } : e,
+          ),
+        ),
       duplicateNode: (id) => {
         const node = nodesRef.current.find((n) => n.id === id);
         if (node) spawn(node.data, { x: node.position.x + PASTE_OFFSET, y: node.position.y + PASTE_OFFSET });

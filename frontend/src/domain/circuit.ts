@@ -19,6 +19,7 @@ export interface Net {
   id: string;
   name: string;
   endpoints: string[];
+  waypoints?: Position[];
 }
 
 export interface Circuit {
