@@ -1,4 +1,5 @@
-import Editor from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "../../shared/ui/Skeleton";
 
 interface Props {
@@ -9,9 +10,42 @@ interface Props {
   onChange?: (value: string) => void;
 }
 
-// Reusable Monaco wrapper. @monaco-editor/react fetches the editor on mount,
-// so importing this module lazily keeps Monaco out of the initial bundle.
+// Reusable Monaco wrapper. @monaco-editor/react fetches the editor from a CDN on
+// mount, so importing this module lazily keeps Monaco out of the initial bundle.
+// If that fetch never resolves (offline / blocked), fall back to a plain textarea
+// so firmware always stays editable.
 export default function MonacoEditor({ value, language = "python", readOnly, height = "100%", onChange }: Props) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const timer = window.setTimeout(() => alive && setFailed(true), 8000);
+    loader
+      .init()
+      .then(() => window.clearTimeout(timer))
+      .catch(() => {
+        window.clearTimeout(timer);
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  if (failed) {
+    return (
+      <textarea
+        className="code-editor__textarea"
+        value={value}
+        readOnly={readOnly}
+        spellCheck={false}
+        onChange={(e) => onChange?.(e.target.value)}
+        aria-label="Firmware source"
+      />
+    );
+  }
+
   return (
     <Editor
       height={height}

@@ -28,6 +28,9 @@ export interface RoutingController {
   selectTrace: (id: string | null) => void;
   highlightNet: (netId: string | null) => void;
   setTraceEndpoints: (updates: TraceEndpointUpdate[]) => void;
+  moveTracePoint: (id: string, index: number, point: Point) => void;
+  insertTracePoint: (id: string, index: number, point: Point) => void;
+  removeTracePoint: (id: string, index: number) => void;
   begin: (netId: string, point: Point, from: string) => void;
   extend: (point: Point) => void;
   via: (point: Point) => void;
@@ -37,6 +40,7 @@ export interface RoutingController {
   deleteTrace: (id: string) => void;
   deleteVia: (id: string) => void;
   clearRoutes: () => void;
+  restoreRoutes: (traces: Trace[], vias: Via[]) => void;
 }
 
 export function useRouting(): RoutingController {
@@ -87,6 +91,31 @@ export function useRouting(): RoutingController {
             return m ? { ...t, points: t.points.map((p, i) => m.get(i) ?? p) } : t;
           });
         }),
+      // Drag one joint of a trace so users can reshape auto-routed copper by hand.
+      moveTracePoint: (id, index, point) =>
+        setTraces((prev) =>
+          prev.map((t) =>
+            t.id === id ? { ...t, points: t.points.map((p, i) => (i === index ? point : p)) } : t,
+          ),
+        ),
+      // Add a new joint at `index` (splitting a segment) to bend copper around things.
+      insertTracePoint: (id, index, point) =>
+        setTraces((prev) =>
+          prev.map((t) =>
+            t.id === id
+              ? { ...t, points: [...t.points.slice(0, index), point, ...t.points.slice(index)] }
+              : t,
+          ),
+        ),
+      // Remove a joint; keep at least the two pad endpoints so the trace stays valid.
+      removeTracePoint: (id, index) =>
+        setTraces((prev) =>
+          prev.map((t) =>
+            t.id === id && t.points.length > 2
+              ? { ...t, points: t.points.filter((_, i) => i !== index) }
+              : t,
+          ),
+        ),
       // Pads sit off the routing grid, so start/finish on the pad's exact point.
       begin: (netId, point, from) =>
         setRouting({ netId, layer: activeLayer, points: [point], from }),
@@ -143,6 +172,12 @@ export function useRouting(): RoutingController {
       clearRoutes: () => {
         setTraces([]);
         setVias([]);
+        setRouting(null);
+      },
+      // Replace all copper at once (used by undo/redo).
+      restoreRoutes: (nextTraces, nextVias) => {
+        setTraces(nextTraces);
+        setVias(nextVias);
         setRouting(null);
       },
     }),

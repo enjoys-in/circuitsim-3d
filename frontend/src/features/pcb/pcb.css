@@ -146,6 +146,27 @@
   opacity: 0.18;
 }
 
+.traces-ghost {
+  pointer-events: none;
+}
+
+.trace-handle {
+  fill: #fde68a;
+  stroke: #1b2a2c;
+  stroke-width: 1;
+  cursor: grab;
+}
+
+.trace-handle__hit {
+  fill: transparent;
+  cursor: grab;
+}
+
+.trace-handle:hover {
+  fill: #ffffff;
+  r: 5.5;
+}
+
 .via__ring {
   fill: #cbd5e1;
   stroke: #64748b;

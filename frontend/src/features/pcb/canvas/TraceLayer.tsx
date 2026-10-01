@@ -11,6 +11,7 @@ interface Props {
   highlightNet: string | null;
   onTracePointerDown: (e: PointerEvent, id: string) => void;
   onTraceContextMenu: (e: MouseEvent, id: string) => void;
+  onTraceDoubleClick: (e: MouseEvent, id: string) => void;
   onViaContextMenu: (e: MouseEvent, id: string) => void;
 }
 
@@ -22,6 +23,7 @@ function TraceLayerImpl({
   highlightNet,
   onTracePointerDown,
   onTraceContextMenu,
+  onTraceDoubleClick,
   onViaContextMenu,
 }: Props) {
   const traceClass = (trace: Trace): string => {
@@ -43,9 +45,10 @@ function TraceLayerImpl({
             />
             <path
               d={polyline(trace.points)}
-              strokeWidth={trace.width + 8}
+              strokeWidth={Math.max(trace.width + 14, 18)}
               className="trace__hit"
               onPointerDown={(e) => onTracePointerDown(e, trace.id)}
+              onDoubleClick={(e) => onTraceDoubleClick(e, trace.id)}
               onContextMenu={(e) => onTraceContextMenu(e, trace.id)}
             />
           </g>

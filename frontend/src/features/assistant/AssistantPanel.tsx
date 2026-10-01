@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
+import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { assistantService, errorMessage } from "../../services";
-import type { ChatMessage } from "../../services/assistant.service";
+import type { ChatMessage, ProviderOption } from "../../services/assistant.service";
 import { useCircuitActions, useCircuitGraph } from "../board/CircuitGraphContext";
 
 const IDEAS = [
@@ -11,6 +12,11 @@ const IDEAS = [
   "Add a push button that switches the LED",
 ];
 
+interface Selection {
+  provider: string;
+  model: string;
+}
+
 export function AssistantPanel() {
   const { circuit } = useCircuitGraph();
   const { loadCircuit } = useCircuitActions();
@@ -18,37 +24,71 @@ export function AssistantPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [provider, setProvider] = useState<string | null>(null);
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [sel, setSel] = usePersistentState<Selection>("circuitsim.assistant.model", {
+    provider: "",
+    model: "",
+  });
   const threadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     assistantService
-      .status()
+      .providers()
       .then((s) => {
         setConfigured(s.configured);
-        setProvider(s.provider ? `${s.provider}${s.model ? ` · ${s.model}` : ""}` : null);
+        setProviders(s.providers);
+        setSel((cur) => {
+          const names = s.providers.map((p) => p.name);
+          const provider = cur.provider && names.includes(cur.provider) ? cur.provider : s.provider ?? names[0] ?? "";
+          const picked = s.providers.find((p) => p.name === provider);
+          const model = cur.provider === provider && cur.model ? cur.model : picked?.default_model ?? s.model ?? "";
+          return { provider, model };
+        });
       })
       .catch(() => setConfigured(false));
-  }, []);
+  }, [setSel]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [messages, busy]);
 
+  const activeProvider = providers.find((p) => p.name === sel.provider);
+  const chooseProvider = (name: string) => {
+    const picked = providers.find((p) => p.name === name);
+    setSel({ provider: name, model: picked?.default_model ?? "" });
+  };
+
   const send = async (text: string) => {
     const content = text.trim();
     if (!content || busy) return;
     const next: ChatMessage[] = [...messages, { role: "user", content }];
-    setMessages(next);
+    // Append an empty assistant bubble to type the streamed reply into.
+    setMessages([...next, { role: "assistant", content: "" }]);
     setInput("");
     setBusy(true);
+    const appendToLast = (fn: (prev: string) => string) =>
+      setMessages((m) => {
+        const copy = m.slice();
+        const last = copy[copy.length - 1];
+        if (last?.role === "assistant") copy[copy.length - 1] = { ...last, content: fn(last.content) };
+        return copy;
+      });
     try {
-      const res = await assistantService.chat(next, circuit);
-      setConfigured(res.configured);
-      setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
-      if (res.circuit && res.circuit.instances.length > 0) loadCircuit(res.circuit);
+      await assistantService.chatStream(
+        next,
+        circuit,
+        { provider: sel.provider || null, model: sel.model || null },
+        {
+          onToken: (t) => appendToLast((prev) => prev + t),
+          onDone: (res) => {
+            setConfigured(res.configured);
+            appendToLast((prev) => res.reply || prev);
+            if (res.circuit && res.circuit.instances.length > 0) loadCircuit(res.circuit);
+          },
+        },
+      );
     } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: `Error: ${errorMessage(e)}` }]);
+      appendToLast((prev) => prev || `Error: ${errorMessage(e)}`);
     } finally {
       setBusy(false);
     }
@@ -61,8 +101,44 @@ export function AssistantPanel() {
           AI not configured — add a provider key (e.g. GROQ_API_KEY) to the backend .env
         </div>
       )}
-      {configured && provider && (
-        <div className="assistant__badge assistant__badge--ok">AI ready — {provider}</div>
+      {configured && providers.length > 0 && (
+        <div className="assistant__badge assistant__badge--ok">AI ready — {sel.provider} · {sel.model}</div>
+      )}
+
+      {configured && providers.length > 0 && (
+        <div className="assistant__models">
+          <label className="assistant__model-field">
+            <span>Provider</span>
+            <select
+              className="assistant__select"
+              value={sel.provider}
+              disabled={busy}
+              onChange={(e) => chooseProvider(e.target.value)}
+            >
+              {providers.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="assistant__model-field">
+            <span>Model</span>
+            <input
+              className="assistant__select"
+              list="assistant-model-options"
+              value={sel.model}
+              disabled={busy}
+              placeholder={activeProvider?.default_model}
+              onChange={(e) => setSel((cur) => ({ ...cur, model: e.target.value }))}
+            />
+            <datalist id="assistant-model-options">
+              {(activeProvider?.models ?? []).map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+          </label>
+        </div>
       )}
 
       {messages.length === 0 ? (
@@ -83,14 +159,18 @@ export function AssistantPanel() {
         </>
       ) : (
         <div className="assistant__thread" ref={threadRef}>
-          {messages.map((m, i) => (
-            <div key={i} className={`assistant__msg assistant__msg--${m.role}`}>
-              {m.content}
-            </div>
-          ))}
-          {busy && (
-            <div className="assistant__msg assistant__msg--assistant assistant__msg--typing">thinking…</div>
-          )}
+          {messages.map((m, i) => {
+            const typing =
+              busy && i === messages.length - 1 && m.role === "assistant" && m.content === "";
+            return (
+              <div
+                key={i}
+                className={`assistant__msg assistant__msg--${m.role}${typing ? " assistant__msg--typing" : ""}`}
+              >
+                {m.content || (typing ? "thinking\u2026" : "")}
+              </div>
+            );
+          })}
         </div>
       )}
 

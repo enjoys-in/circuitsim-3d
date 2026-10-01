@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { cx } from "../../shared/lib/format";
 import { Button } from "../../shared/ui/Button";
 import { NumberInput } from "../../shared/ui/NumberInput";
 import { usePcb } from "./PcbContext";
+import { copyPcbPng, exportPcbPng } from "./pcbExport";
 import { LAYER_COLOR, type Layer } from "./model/pcbTypes";
 
 const LAYERS: Layer[] = ["top", "bottom"];
@@ -20,6 +22,17 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
   const errors = pcb.drc.filter((v) => v.kind !== "unrouted").length;
   const unrouted = pcb.netCount - pcb.connectivity.routedNets.size;
   const selected = pcb.selectedId;
+  const [copied, setCopied] = useState(false);
+
+  const copyPng = async () => {
+    const ok = await copyPcbPng(pcb.board);
+    if (!ok) {
+      await exportPcbPng(pcb.board); // clipboard blocked -> fall back to a download
+      return;
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <div className="pcb-toolbar">
@@ -87,6 +100,9 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
       <div className="pcb-toolbar__end">
         {pcb.routing && <span className="pcb-hint">routing — click pads/points, V = via, Esc = cancel</span>}
         {!pcb.routing && selected && <span className="pcb-hint">part selected — R rotate, F flip, drag to move</span>}
+        {!pcb.routing && !selected && pcb.selectedTraceId && (
+          <span className="pcb-hint">trace selected — drag the line or a joint · double-click to add · right-click joint to remove</span>
+        )}
         <span className={cx("status-badge", unrouted === 0 ? "status-badge--ok" : "status-badge--stale")}>
           {unrouted === 0 ? "fully routed" : `${unrouted} unrouted`}
         </span>
@@ -108,6 +124,16 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
         <Button size="sm" onClick={pcb.clearRoutes}>
           Clear routes
         </Button>
+        {mode === "2d" && (
+          <>
+            <Button size="sm" onClick={() => exportPcbPng(pcb.board)} title="Download the layout as a PNG">
+              PNG
+            </Button>
+            <Button size="sm" onClick={copyPng} title="Copy the layout image to the clipboard">
+              {copied ? "Copied" : "Copy PNG"}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

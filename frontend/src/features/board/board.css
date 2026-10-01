@@ -256,12 +256,38 @@
   border-bottom: 1px solid var(--border);
 }
 
+.board-skeleton__spacer {
+  flex: 1;
+}
+
 .board-skeleton__mat {
+  position: relative;
   flex: 1;
   margin: 12px;
   border-radius: 12px;
+  overflow: hidden;
   background: radial-gradient(circle, #1f4b4f 1px, transparent 1px) 0 0 / 16px 16px, #081c1f;
-  opacity: 0.7;
+  opacity: 0.8;
+}
+
+.board-skeleton__part {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.board-skeleton__pins {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 10px;
+}
+
+.board-skeleton__pin {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1f4b4f;
 }
 
 .context-menu__backdrop {

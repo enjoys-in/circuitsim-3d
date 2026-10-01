@@ -11,6 +11,7 @@ import { DrcMarkers, Ratsnest, RoutePreview } from "./Overlays";
 import { PcbZoomOverlay } from "./PcbZoomOverlay";
 import { SelectionHandles } from "./SelectionHandles";
 import { TraceLayer } from "./TraceLayer";
+import { TraceHandles, UnderPartTraces } from "./TraceEditing";
 import { usePanZoom } from "./usePanZoom";
 import { usePcbInteraction } from "./usePcbInteraction";
 
@@ -100,6 +101,7 @@ export function PcbCanvas({ render }: { render: PcbRenderMode }) {
         highlightNet={highlightNet}
         onTracePointerDown={interaction.onTracePointerDown}
         onTraceContextMenu={interaction.onTraceContextMenu}
+        onTraceDoubleClick={interaction.onTraceDoubleClick}
         onViaContextMenu={interaction.onViaContextMenu}
       />
 
@@ -136,6 +138,13 @@ export function PcbCanvas({ render }: { render: PcbRenderMode }) {
           onResizePointerDown={interaction.onResizePointerDown}
         />
       )}
+
+      <UnderPartTraces traces={pcb.traces} obstacles={pcb.obstacles} visible={pcb.visible} />
+      <TraceHandles
+        trace={pcb.traces.find((t) => t.id === pcb.selectedTraceId) ?? null}
+        onPointerDown={interaction.onWaypointPointerDown}
+        onContextMenu={interaction.onWaypointContextMenu}
+      />
 
       <Ratsnest airwires={pcb.connectivity.airwires} highlightNet={highlightNet} />
       {pcb.routing && <RoutePreview routing={pcb.routing} cursor={interaction.cursor} />}

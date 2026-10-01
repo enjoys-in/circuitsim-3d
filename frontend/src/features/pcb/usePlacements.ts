@@ -59,6 +59,7 @@ export interface PlacementController {
   setPadBox: (instanceId: string, padName: string, override: PadOverride) => void;
   turnPad: (instanceId: string, padName: string) => void;
   resizeBoard: (patch: Partial<Board>) => void;
+  restoreLayout: (placements: Map<string, Placement>, board: Board) => void;
 }
 
 export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, ComponentDef>): PlacementController {
@@ -165,7 +166,12 @@ export function usePlacements(circuit: Circuit, catalog: ReadonlyMap<string, Com
           return { ...p, pads: { ...p.pads, [padName]: { ...prev, angle: ((prev.angle ?? 0) + 90) % 360 } } };
         }),
       resizeBoard: (delta) => setBoard((prev) => ({ ...prev, ...delta })),
+      // Replace the whole layout at once (used by undo/redo).
+      restoreLayout: (nextPlacements, nextBoard) => {
+        setPlacements(nextPlacements);
+        setBoard(nextBoard);
+      },
     }),
-    [placements, board, selectedId, selectedPadId, autoArrange, patch],
+    [placements, board, selectedId, selectedPadId, autoArrange, patch, setBoard],
   );
 }

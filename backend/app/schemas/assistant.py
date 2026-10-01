@@ -14,6 +14,21 @@ class ChatMessage(BaseModel):
 class AssistantRequest(BaseModel):
     messages: list[ChatMessage]
     circuit: Circuit | None = None
+    provider: str | None = None
+    model: str | None = None
+
+
+class ProviderOption(BaseModel):
+    name: str
+    default_model: str
+    models: list[str] = Field(default_factory=list)
+
+
+class AssistantProviders(BaseModel):
+    configured: bool = False
+    provider: str | None = None
+    model: str | None = None
+    providers: list[ProviderOption] = Field(default_factory=list)
 
 
 class AssistantResponse(BaseModel):

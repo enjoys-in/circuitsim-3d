@@ -8,6 +8,7 @@ import type { Obstacle, Placement } from "./model/pcbTypes";
 import { otherLayer } from "./model/pcbTypes";
 import type { DrcViolation } from "./model/pcbTypes";
 import { usePlacements, type PlacementController } from "./usePlacements";
+import { usePcbHistory, type PcbSnapshot } from "./usePcbHistory";
 import { useRouting, type RoutingController } from "./useRouting";
 
 const PAD_SNAP = 2;
@@ -18,6 +19,8 @@ export interface PcbState extends PlacementController, RoutingController {
   drc: DrcViolation[];
   netCount: number;
   obstacles: Obstacle[];
+  undo: () => void;
+  redo: () => void;
 }
 
 export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, ComponentDef>): PcbState {
@@ -106,8 +109,20 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
     [placement, reanchor],
   );
 
+  const restore = useCallback(
+    (snapshot: PcbSnapshot) => {
+      placement.restoreLayout(new Map(snapshot.placements), snapshot.board);
+      routing.restoreRoutes(snapshot.traces, snapshot.vias);
+    },
+    [placement, routing],
+  );
+  const history = usePcbHistory(
+    { placements: placement.placements, board: placement.board, traces: routing.traces, vias: routing.vias },
+    restore,
+  );
+
   return useMemo(
-    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles }),
-    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles],
+    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, undo: history.undo, redo: history.redo }),
+    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, history],
   );
 }

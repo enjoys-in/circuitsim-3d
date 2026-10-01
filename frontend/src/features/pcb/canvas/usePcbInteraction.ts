@@ -7,13 +7,16 @@ import {
   type PointerEvent,
   type WheelEvent,
 } from "react";
-import { distance, rotate, snap } from "../model/geometry";
+import { distance, pointToSegment, rotate, snap, snapPoint } from "../model/geometry";
 import type { PadInfo } from "../model/nets";
 import type { Point } from "../model/pcbTypes";
+import { GRID } from "../model/pcbTypes";
 import type { PcbState } from "../usePcbState";
 import type { PanZoom } from "./usePanZoom";
 
 const PAD_SNAP = 2;
+// Pointer travel (px) before a press on a trace turns into a joint drag.
+const TRACE_DRAG_THRESHOLD = 4;
 
 interface TraceAnchor {
   traceId: string;
@@ -41,6 +44,9 @@ export interface Interaction {
   onPadPointerDown: (e: PointerEvent, pad: PadInfo) => void;
   onTracePointerDown: (e: PointerEvent, id: string) => void;
   onTraceContextMenu: (e: MouseEvent, id: string) => void;
+  onTraceDoubleClick: (e: MouseEvent, id: string) => void;
+  onWaypointPointerDown: (e: PointerEvent, traceId: string, index: number) => void;
+  onWaypointContextMenu: (e: MouseEvent, traceId: string, index: number) => void;
   onViaContextMenu: (e: MouseEvent, id: string) => void;
 }
 
@@ -48,6 +54,8 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
   const [cursor, setCursor] = useState<Point | null>(null);
   const drag = useRef<DragState | null>(null);
   const resize = useRef<{ instanceId: string } | null>(null);
+  const waypoint = useRef<{ traceId: string; index: number } | null>(null);
+  const tracePress = useRef<{ traceId: string; downX: number; downY: number } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
   const routingRef = useRef(pcb.routing);
   routingRef.current = pcb.routing;
@@ -78,6 +86,25 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
       } else if (key === "f") {
         e.preventDefault();
         pcb.flipComponent(id);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pcb]);
+
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Y (or Shift+Z) redoes the whole PCB layout.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        pcb.undo();
+      } else if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        pcb.redo();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -150,7 +177,45 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
   const onSvgPointerMove = useCallback(
     (e: PointerEvent) => {
       const board = view.toBoard(e.clientX, e.clientY);
-      if (resize.current) {
+      // A press on a selected trace becomes a joint drag once the pointer moves: grab the
+      // nearest joint, or bend the segment by inserting a new one at the grab point.
+      if (tracePress.current && !waypoint.current) {
+        const moved = Math.hypot(e.clientX - tracePress.current.downX, e.clientY - tracePress.current.downY);
+        if (moved >= TRACE_DRAG_THRESHOLD) {
+          const trace = pcb.traces.find((t) => t.id === tracePress.current!.traceId);
+          if (trace) {
+            const at = snapPoint(view.toBoard(tracePress.current.downX, tracePress.current.downY));
+            let near = -1;
+            let nearDist = Infinity;
+            trace.points.forEach((p, i) => {
+              const d = distance(p, at);
+              if (d < nearDist) {
+                nearDist = d;
+                near = i;
+              }
+            });
+            if (nearDist <= GRID) {
+              waypoint.current = { traceId: trace.id, index: near };
+            } else {
+              let seg = 1;
+              let segDist = Infinity;
+              for (let i = 0; i < trace.points.length - 1; i++) {
+                const d = pointToSegment(at, trace.points[i], trace.points[i + 1]);
+                if (d < segDist) {
+                  segDist = d;
+                  seg = i + 1;
+                }
+              }
+              pcb.insertTracePoint(trace.id, seg, at);
+              waypoint.current = { traceId: trace.id, index: seg };
+            }
+          }
+          tracePress.current = null;
+        }
+      }
+      if (waypoint.current) {
+        pcb.moveTracePoint(waypoint.current.traceId, waypoint.current.index, snapPoint(board));
+      } else if (resize.current) {
         const placement = pcb.placements.get(resize.current.instanceId);
         if (placement) {
           const local = rotate({ x: board.x - placement.x, y: board.y - placement.y }, -placement.rotation);
@@ -186,6 +251,8 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
   const onSvgPointerUp = useCallback(() => {
     drag.current = null;
     resize.current = null;
+    waypoint.current = null;
+    tracePress.current = null;
     pan.current = null;
   }, []);
 
@@ -213,13 +280,61 @@ export function usePcbInteraction(pcb: PcbState, view: PanZoom): Interaction {
     onPadPointerDown,
     onTracePointerDown: useCallback((e: PointerEvent, id: string) => {
       e.stopPropagation();
+      if (routingRef.current) return;
       pcb.selectTrace(id);
+      // Capture the pointer so dragging the trace reshapes it instead of panning the board.
+      tracePress.current = { traceId: id, downX: e.clientX, downY: e.clientY };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* capture unsupported — drag still works via bubbling */
+      }
     }, [pcb]),
     onTraceContextMenu: useCallback(
       (e: MouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
         pcb.deleteTrace(id);
+      },
+      [pcb],
+    ),
+    // Double-click a trace to drop a new joint on the nearest segment.
+    onTraceDoubleClick: useCallback(
+      (e: MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const trace = pcb.traces.find((t) => t.id === id);
+        if (!trace || trace.points.length < 2) return;
+        const at = view.toBoard(e.clientX, e.clientY);
+        let best = 1;
+        let bestDist = Infinity;
+        for (let i = 0; i < trace.points.length - 1; i++) {
+          const d = pointToSegment(at, trace.points[i], trace.points[i + 1]);
+          if (d < bestDist) {
+            bestDist = d;
+            best = i + 1;
+          }
+        }
+        pcb.insertTracePoint(id, best, snapPoint(at));
+        pcb.selectTrace(id);
+      },
+      [pcb, view],
+    ),
+    onWaypointPointerDown: useCallback(
+      (e: PointerEvent, traceId: string, index: number) => {
+        e.stopPropagation();
+        if (routingRef.current) return;
+        pcb.selectTrace(traceId);
+        waypoint.current = { traceId, index };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      },
+      [pcb],
+    ),
+    onWaypointContextMenu: useCallback(
+      (e: MouseEvent, traceId: string, index: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pcb.removeTracePoint(traceId, index);
       },
       [pcb],
     ),

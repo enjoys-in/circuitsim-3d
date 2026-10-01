@@ -5,7 +5,9 @@ import { Button } from "../../shared/ui/Button";
 import { FEATURED_EXAMPLES } from "../examples/examples";
 import { useExampleLoader } from "../examples/useExampleLoader";
 import { useWorkspaceUi } from "../workspace/WorkspaceUiContext";
+import { useCatalog } from "../catalog/CatalogContext";
 import { BoardToolbar } from "./BoardToolbar";
+import { BoardSkeleton } from "./BoardSkeleton";
 import { BoardContextMenu } from "./contextMenu/BoardContextMenu";
 import { useContextMenu } from "./contextMenu/useContextMenu";
 import { useCircuitGraph } from "./CircuitGraphContext";
@@ -39,9 +41,16 @@ function EmptyBoard() {
 
 export default function Board() {
   const graph = useCircuitGraph();
+  const { status } = useCatalog();
   const contextMenu = useContextMenu();
   const pointer = useRef({ x: 0, y: 0 });
   useBoardShortcuts(pointer);
+
+  // Show a skeleton until the catalog is ready so the canvas doesn't flash the
+  // empty "start building" state before a saved circuit is restored.
+  if (status === "idle" || status === "pending") {
+    return <BoardSkeleton />;
+  }
 
   return (
     <section

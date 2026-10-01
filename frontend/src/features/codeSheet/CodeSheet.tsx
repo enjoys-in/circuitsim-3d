@@ -33,7 +33,7 @@ export function CodeSheet() {
       open={codeOpen}
       title="Code & Flash"
       onClose={closeCode}
-      actions={<span className="sheet__soon">standalone editor · soon</span>}
+      actions={<span className="sheet__soon">MicroPython-style firmware</span>}
     >
       {boards.length === 0 ? (
         <EmptyState title="No board to flash">Drop an ESP32, Arduino or other dev board onto the canvas first.</EmptyState>
@@ -58,14 +58,16 @@ export function CodeSheet() {
                 key={board.id}
                 title={board.label}
                 value={String(board.params.firmware ?? "")}
+                defaultSource={String(byKey.get(board.component_key)?.default_params.firmware ?? "")}
                 fault={live.instances[board.id]?.fault}
                 onFlash={(source) => updateParams(board.id, { firmware: source })}
               />
             </Suspense>
           )}
           <p className="code-sheet__note">
-            Flashing writes firmware straight to the selected board and it runs on the next simulation tick. A richer
-            multi-file editor with build output is planned.
+            <strong>Check</strong> validates the firmware, <strong>Flash</strong> writes it to the selected board (runs
+            on the next simulation tick), <strong>Download</strong> saves the <code>.py</code> file, and{" "}
+            <strong>Reset</strong> restores the board default.
           </p>
         </div>
       )}
