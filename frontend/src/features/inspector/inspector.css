@@ -132,9 +132,16 @@
   padding: 1px 6px;
   border-radius: 5px;
   border: 1px solid var(--border);
+  background: transparent;
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--muted);
+  cursor: pointer;
+  appearance: none;
+}
+
+.pin-chip:hover {
+  border-color: var(--accent);
 }
 
 .pin-chip--wired {

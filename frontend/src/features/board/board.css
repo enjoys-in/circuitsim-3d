@@ -164,6 +164,22 @@
   cursor: crosshair;
 }
 
+/* Flash when its pin is clicked in the sidebar, so the user can locate it. */
+.react-flow__handle.pin.pin--highlight {
+  background: #fbbf24;
+  border-color: #fde68a;
+  animation: pin-flash 0.7s ease-out 3;
+}
+
+@keyframes pin-flash {
+  0% {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(251, 191, 36, 0);
+  }
+}
+
 .wire__shadow {
   fill: none;
   stroke: rgba(0, 0, 0, 0.45);

@@ -5,6 +5,7 @@ import { AsyncBoundary } from "../../shared/ui/AsyncBoundary";
 import Board from "../board/Board";
 import { BoardSkeleton } from "../board/BoardSkeleton";
 import { CircuitGraphProvider } from "../board/CircuitGraphProvider";
+import { HighlightProvider } from "../board/HighlightContext";
 import { CodeSheet } from "../codeSheet/CodeSheet";
 import { LevelGallery } from "../examples/LevelGallery";
 import { InspectorSkeleton } from "../inspector/InspectorSkeleton";
@@ -76,13 +77,15 @@ export default function Workspace() {
   return (
     <ReactFlowProvider>
       <CircuitGraphProvider>
-        <SimulationProvider>
-          <PcbProvider>
-            <WorkspaceUiProvider>
-              <WorkspaceBody />
-            </WorkspaceUiProvider>
-          </PcbProvider>
-        </SimulationProvider>
+        <HighlightProvider>
+          <SimulationProvider>
+            <PcbProvider>
+              <WorkspaceUiProvider>
+                <WorkspaceBody />
+              </WorkspaceUiProvider>
+            </PcbProvider>
+          </SimulationProvider>
+        </HighlightProvider>
       </CircuitGraphProvider>
     </ReactFlowProvider>
   );

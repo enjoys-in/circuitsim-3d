@@ -4,6 +4,7 @@ import { cx } from "../../../shared/lib/format";
 import { getPart, PartArt, type PartPin } from "../../parts";
 import { useLiveInstance } from "../../simulation/SimulationContext";
 import { useCircuitActions } from "../CircuitGraphContext";
+import { useHighlight } from "../HighlightContext";
 import type { PartNodeType } from "./types";
 
 const SIDE: Record<PartPin["side"], Position> = {
@@ -19,6 +20,7 @@ function PartNodeImpl({ id, data, selected }: NodeProps<PartNodeType>) {
   const { interact } = useCircuitActions();
   const readout = spec.readout?.(data.params, state) ?? null;
   const updateNodeInternals = useUpdateNodeInternals();
+  const { pin: highlighted } = useHighlight();
   const rotation = data.rotation ?? 0;
   const flip = data.flip ?? false;
 
@@ -45,7 +47,7 @@ function PartNodeImpl({ id, data, selected }: NodeProps<PartNodeType>) {
             id={pin.name}
             type="source"
             position={SIDE[pin.side]}
-            className="pin"
+            className={cx("pin", highlighted?.nodeId === id && highlighted.pin === pin.name && "pin--highlight")}
             style={{ left: pin.x, top: pin.y, right: "auto", bottom: "auto", transform: "translate(-50%, -50%)" }}
             title={`${data.label}.${pin.name}`}
           />
