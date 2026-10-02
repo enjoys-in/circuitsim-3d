@@ -43,6 +43,24 @@ class Resistor(Resistive):
         return []
 
 
+class Voltmeter(Resistive):
+    """Ideal voltmeter: reads the voltage across its probes without loading the circuit."""
+
+    pins = ("+", "-")
+
+    def resistance(self) -> float:
+        return 1e9
+
+
+class Ammeter(Resistive):
+    """Ideal ammeter: a near-zero-resistance series element that reads the current through it."""
+
+    pins = ("in", "out")
+
+    def resistance(self) -> float:
+        return CLOSED_RESISTANCE
+
+
 class Ldr(Resistive):
     def resistance(self) -> float:
         lux = max(self.p("lux", 100), 0.01)

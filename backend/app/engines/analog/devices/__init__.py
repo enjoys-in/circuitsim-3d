@@ -5,6 +5,7 @@ from collections.abc import Callable
 from app.domain.entities.project import ComponentInstance
 from app.engines.analog.devices.base import Device, Resolver
 from app.engines.analog.devices.passives import (
+    Ammeter,
     Buzzer,
     Capacitor,
     DipSwitch,
@@ -18,6 +19,7 @@ from app.engines.analog.devices.passives import (
     SpdtSwitch,
     Speaker,
     Switch,
+    Voltmeter,
 )
 from app.engines.analog.devices.semiconductors import Bjt, Diode, Led, Mosfet, RgbLed, Zener
 from app.engines.analog.devices.sources import (
@@ -34,6 +36,8 @@ DeviceFactory = Callable[[ComponentInstance, Resolver], Device]
 DEVICE_FACTORIES: dict[str, DeviceFactory] = {
     "resistor": Resistor,
     "potentiometer": Potentiometer,
+    "voltmeter": Voltmeter,
+    "ammeter": Ammeter,
     "ldr": Ldr,
     "push_button": Switch,
     "push_button_nc": Switch,

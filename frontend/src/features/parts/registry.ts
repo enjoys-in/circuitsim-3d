@@ -6,6 +6,7 @@ import { boardParts, devBoard } from "./library/boards";
 import { breadboardParts } from "./library/breadboard";
 import { connectorParts } from "./library/connectors";
 import { logicParts } from "./library/logic";
+import { meterParts } from "./library/meters";
 import { moduleFactory } from "./library/modules";
 import { powerParts } from "./library/power";
 import { radialParts } from "./library/radial";
@@ -27,6 +28,7 @@ const FACTORIES: Record<string, PartFactory> = {
   ...boardParts,
   ...breadboardParts,
   ...connectorParts,
+  ...meterParts,
 };
 
 function fallback(def: ComponentDef): PartFactory {
