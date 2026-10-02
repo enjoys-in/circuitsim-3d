@@ -259,10 +259,13 @@ class AssistantService:
         except httpx.HTTPError as exc:
             return {"reply": f"The {provider.name} request failed: {exc}", "configured": True}
 
+        content = self._complete_if_truncated(provider, payload, content)
         parsed = self._parse(content)
         reply = str(parsed.get("reply") or "").strip() or "Done."
         design = parsed.get("design")
         if not isinstance(design, dict):
+            if '"parts"' in content:
+                reply += "\n\n(The design was too large to finish \u2014 try a smaller change.)"
             return {"reply": reply, "configured": True}
 
         try:
@@ -281,9 +284,11 @@ class AssistantService:
         }
 
     # -- internals ----------------------------------------------------------
-    def _complete(self, provider: _Provider, messages: list[dict[str, str]]) -> str:
+    def _complete(
+        self, provider: _Provider, messages: list[dict[str, str]], max_tokens: int = 8000
+    ) -> str:
         if provider.fmt == "anthropic":
-            return self._complete_anthropic(provider, messages)
+            return self._complete_anthropic(provider, messages, max_tokens)
         url = f"{provider.base_url.rstrip('/')}/chat/completions"
         headers = {"Authorization": f"Bearer {provider.key}"}
         if provider.name == "openrouter":
@@ -293,7 +298,7 @@ class AssistantService:
             "model": provider.model,
             "messages": messages,
             "temperature": 0.2,
-            "max_tokens": 8000,
+            "max_tokens": max_tokens,
         }
         if provider.name == "groq" and "gpt-oss" in provider.model:
             # gpt-oss reasoning tokens count toward max_tokens; keep them small so the
@@ -304,7 +309,9 @@ class AssistantService:
             res.raise_for_status()
             return res.json()["choices"][0]["message"].get("content") or ""
 
-    def _complete_anthropic(self, provider: _Provider, messages: list[dict[str, str]]) -> str:
+    def _complete_anthropic(
+        self, provider: _Provider, messages: list[dict[str, str]], max_tokens: int = 3000
+    ) -> str:
         system = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
         convo = [
             {"role": m["role"], "content": m["content"]}
@@ -319,7 +326,7 @@ class AssistantService:
         }
         body = {
             "model": provider.model,
-            "max_tokens": 3000,
+            "max_tokens": max_tokens,
             "temperature": 0.2,
             "system": system,
             "messages": convo,
@@ -329,6 +336,65 @@ class AssistantService:
             res.raise_for_status()
             parts = res.json().get("content", [])
             return "".join(b.get("text", "") for b in parts if b.get("type") == "text")
+
+    # -- continuation (retry + combine a truncated design) ------------------
+    def _complete_if_truncated(
+        self, provider: _Provider, payload: list[dict[str, str]], raw: str
+    ) -> str:
+        """A large design can overflow max_tokens mid-JSON. First regenerate with a much
+        bigger budget; if that still falls short, stitch a boundary-safe continuation on."""
+        if self._design_ok(raw) or '"parts"' not in raw:
+            return raw
+        budget = 8000 if provider.fmt == "anthropic" else 16000
+        try:
+            bigger = self._complete(provider, payload, max_tokens=budget)
+        except httpx.HTTPError:
+            bigger = ""
+        if self._design_ok(bigger):
+            return bigger
+        base = bigger if ('"parts"' in bigger and len(bigger) > len(raw)) else raw
+        # Stitch: ask the model to continue from the last complete object so the seam is valid.
+        for _ in range(2):
+            prefix = self._trim_to_boundary(base)
+            cont = self._continue(provider, payload, prefix)
+            if not cont.strip():
+                break
+            combined = prefix + cont
+            if self._design_ok(combined):
+                return combined
+            if len(combined) <= len(base):
+                break
+            base = combined
+        return base
+
+    def _design_ok(self, raw: str) -> bool:
+        design = self._parse(raw).get("design")
+        return isinstance(design, dict) and bool(design.get("parts"))
+
+    @staticmethod
+    def _trim_to_boundary(raw: str) -> str:
+        """Cut back to the last complete `}` so a continuation can resume on a clean seam."""
+        cut = raw.rfind("}")
+        return raw[: cut + 1] if cut > 0 else raw
+
+    def _continue(self, provider: _Provider, payload: list[dict[str, str]], prefix: str) -> str:
+        messages = [
+            *payload,
+            {"role": "assistant", "content": prefix},
+            {
+                "role": "user",
+                "content": (
+                    "Your JSON reply was cut off. Continue from EXACTLY where the text above ends "
+                    "— output ONLY the remaining characters needed to finish the JSON (start with "
+                    "the next character, usually ',' or ']'), with no repetition, no code fences "
+                    "and no commentary."
+                ),
+            },
+        ]
+        try:
+            return self._complete(provider, messages)
+        except httpx.HTTPError:
+            return ""
 
     # -- streaming ----------------------------------------------------------
     def _stream_complete(
@@ -417,6 +483,7 @@ class AssistantService:
                 },
             )
             return
+        raw = self._complete_if_truncated(provider, payload, raw)
         yield _sse("done", self._finalize(raw))
 
     def _finalize(self, raw: str) -> dict[str, Any]:
@@ -424,6 +491,8 @@ class AssistantService:
         reply = str(parsed.get("reply") or "").strip() or "Done."
         design = parsed.get("design")
         if not isinstance(design, dict):
+            if '"parts"' in raw:  # started a design but it didn't parse -> truncated
+                reply += "\n\n(The design was too large to finish \u2014 try a smaller change.)"
             return {"reply": reply, "configured": True, "circuit": None, "issues": []}
         try:
             built = self._studio.build_circuit(design.get("parts", []), design.get("wires", []))
@@ -495,7 +564,9 @@ class AssistantService:
                     return data
             except json.JSONDecodeError:
                 continue
-        return {"reply": content.strip()}
+        # Unparseable JSON (usually a truncated design): surface just the "reply" text
+        # instead of dumping the raw JSON blob into the chat.
+        return {"reply": _extract_reply(content) or content.strip()}
 
     @staticmethod
     def _layout(circuit: Circuit) -> None:
