@@ -25,6 +25,9 @@ function circuitSummary(result: SimulationOutput | null): string {
   return parts.join(" | ");
 }
 
+// A thread message that may be local-only (shown but never sent to the model, e.g. /compact notes).
+type PanelMessage = ChatMessage & { local?: boolean };
+
 interface Selection {
   provider: string;
   model: string;
@@ -35,7 +38,7 @@ export function AssistantPanel() {
   const { loadCircuit } = useCircuitActions();
   const { result } = useSimulation();
   const { assistantAction, clearAssistantAction } = useWorkspaceUi();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -74,15 +77,56 @@ export function AssistantPanel() {
     setSel({ provider: name, model: picked?.default_model ?? "" });
   };
 
+  const runCommand = (raw: string) => {
+    const name = raw.slice(1).trim().split(/\s+/)[0].toLowerCase();
+    if (name === "compact" || name === "clear" || name === "reset") {
+      const n = messages.filter((m) => !m.local).length;
+      setMessages([
+        {
+          role: "assistant",
+          local: true,
+          content: n
+            ? `Compacted \u2014 cleared ${n} message${n === 1 ? "" : "s"} from the context to save tokens. I still see your current circuit, so just keep going.`
+            : "Already compact \u2014 there's no chat history to clear.",
+        },
+      ]);
+      return;
+    }
+    if (name === "help") {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          local: true,
+          content:
+            "Commands:\n/compact \u2014 clear the chat history to save tokens (your circuit stays).\n/help \u2014 show this.",
+        },
+      ]);
+      return;
+    }
+    setMessages((m) => [
+      ...m,
+      { role: "assistant", local: true, content: `Unknown command \u201c/${name}\u201d. Try /compact or /help.` },
+    ]);
+  };
+
   const send = async (displayText: string, promptText?: string) => {
     const content = displayText.trim();
     if (!content || busy) return;
-    const shown: ChatMessage[] = [...messages, { role: "user", content }];
+    // Slash commands run locally \u2014 no request, no tokens.
+    if (content.startsWith("/")) {
+      runCommand(content);
+      setInput("");
+      return;
+    }
+    const shown: PanelMessage[] = [...messages, { role: "user", content }];
     // Append an empty assistant bubble to type the streamed reply into.
     setMessages([...shown, { role: "assistant", content: "" }]);
-    // The model receives promptText (the engineered explain/fix instruction) when given,
-    // while the thread shows the friendly displayText.
-    const sent: ChatMessage[] = [...messages, { role: "user", content: promptText ?? content }];
+    // Only non-local turns go to the model; /compact clears this history to save tokens.
+    const history = messages
+      .filter((m) => !m.local)
+      .map(({ role, content: text }) => ({ role, content: text }));
+    const sent: ChatMessage[] = [...history, { role: "user", content: promptText ?? content }];
     setInput("");
     setBusy(true);
     const appendToLast = (fn: (prev: string) => string) =>
@@ -235,7 +279,7 @@ export function AssistantPanel() {
             return (
               <div
                 key={i}
-                className={`assistant__msg assistant__msg--${m.role}${typing ? " assistant__msg--typing" : ""}`}
+                className={`assistant__msg assistant__msg--${m.role}${m.local ? " assistant__msg--note" : ""}${typing ? " assistant__msg--typing" : ""}`}
               >
                 {m.content || (typing ? "thinking\u2026" : "")}
               </div>
@@ -249,7 +293,7 @@ export function AssistantPanel() {
           className="assistant__input"
           rows={2}
           value={input}
-          placeholder="Ask the agent to build or change your circuit…"
+          placeholder="Ask to build or change your circuit…  (/compact saves tokens)"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {

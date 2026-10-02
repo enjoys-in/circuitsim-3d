@@ -627,6 +627,15 @@
   font-style: italic;
 }
 
+.assistant__msg--note {
+  align-self: stretch;
+  max-width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .assistant__composer {
   display: flex;
   flex-direction: column;
