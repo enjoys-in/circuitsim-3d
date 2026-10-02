@@ -66,6 +66,23 @@ body {
   font-weight: 600;
 }
 
+.app__help {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  font: 700 13px var(--mono);
+  cursor: pointer;
+  align-self: center;
+}
+
+.app__help:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
 .app__body {
   flex: 1;
   display: flex;
