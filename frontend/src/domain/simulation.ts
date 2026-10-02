@@ -108,3 +108,18 @@ export interface VerifyResponse {
   failed: number;
   total: number;
 }
+
+export interface SweepSeries {
+  id: string;
+  label: string;
+  unit: string;
+  values: (number | null)[];
+}
+
+export interface SweepResult {
+  engine: string;
+  x: number[];
+  x_label: string;
+  x_unit: string;
+  series: SweepSeries[];
+}

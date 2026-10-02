@@ -7,6 +7,24 @@ from app.engines.registry import EngineRegistry
 _INPUT_KEYS = {"input"}
 _OUTPUT_KEYS = {"output", "led"}
 
+# Which scalar each meter-like part contributes to a sweep, and its unit.
+_METER_READING: dict[str, tuple[str, str]] = {
+    "voltmeter": ("voltage", "V"),
+    "ammeter": ("current", "A"),
+    "led": ("current", "A"),
+    "output": ("value", ""),
+}
+
+_PARAM_UNIT: dict[str, str] = {
+    "voltage": "V",
+    "vout": "V",
+    "resistance": "Ω",
+    "capacitance": "F",
+    "inductance": "H",
+    "current": "A",
+    "position": "",
+}
+
 
 def _to_bit(value: object) -> int | None:
     if value is None:
@@ -15,6 +33,13 @@ def _to_bit(value: object) -> int | None:
         return 1 if int(value) else 0  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return 1 if value else 0
+
+
+def _number(value: object) -> float | None:
+    try:
+        return float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
 
 
 class SimulationService:
@@ -90,4 +115,54 @@ class SimulationService:
             "passed": passed,
             "failed": failed,
             "total": len(rows),
+        }
+
+    def sweep(
+        self,
+        circuit: Circuit,
+        *,
+        instance: str,
+        param: str,
+        start: float,
+        stop: float,
+        steps: int = 20,
+        options: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        """Sweep one instance parameter across a range, collecting meter readings per point."""
+        steps = max(2, min(200, int(steps)))
+        xs = [start + (stop - start) * i / (steps - 1) for i in range(steps)]
+        meters = [
+            (m.id, m.label or m.id, *_METER_READING[m.component_key])
+            for m in circuit.instances
+            if m.component_key in _METER_READING
+        ]
+        series: dict[str, dict[str, object]] = {
+            mid: {"id": mid, "label": label, "unit": unit, "values": []}
+            for mid, label, _field, unit in meters
+        }
+        opts = {**(options or {})}
+        opts.pop("analysis", None)  # DC operating point at each swept value
+        engine_name = ""
+        for x in xs:
+            trial = circuit.model_copy(deep=True)
+            for inst in trial.instances:
+                if inst.id == instance:
+                    inst.params = {**inst.params, param: x}
+            try:
+                selected = self._registry.select(trial)
+                engine_name = selected.name
+                result = selected.run(trial, opts)
+                states = result.get("instances", {}) if isinstance(result, dict) else {}
+            except Exception:  # noqa: BLE001 - one bad point must not abort the sweep
+                states = {}
+            for mid, _label, field, _unit in meters:
+                series[mid]["values"].append(  # type: ignore[union-attr]
+                    _number((states.get(mid) or {}).get(field))
+                )
+        return {
+            "engine": engine_name,
+            "x": xs,
+            "x_label": f"{instance}.{param}",
+            "x_unit": _PARAM_UNIT.get(param, ""),
+            "series": list(series.values()),
         }

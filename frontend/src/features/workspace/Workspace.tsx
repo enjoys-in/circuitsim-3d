@@ -9,6 +9,7 @@ import { HighlightProvider } from "../board/HighlightContext";
 import { CodeSheet } from "../codeSheet/CodeSheet";
 import { LevelGallery } from "../examples/LevelGallery";
 import { ShortcutsCheatsheet } from "../shortcuts/ShortcutsCheatsheet";
+import { SweepSheet } from "../sweep/SweepSheet";
 import { VerifySheet } from "../verify/VerifySheet";
 import { InspectorSkeleton } from "../inspector/InspectorSkeleton";
 import { PcbProvider } from "../pcb/PcbProvider";
@@ -72,6 +73,7 @@ function WorkspaceBody() {
       <CodeSheet />
       <LevelGallery />
       <VerifySheet />
+      <SweepSheet />
       <ShortcutsCheatsheet />
     </>
   );

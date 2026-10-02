@@ -60,6 +60,33 @@ class VerifyResponse(BaseModel):
     total: int
 
 
+class SweepRequest(BaseModel):
+    """Sweep one instance parameter across a range and record meter readings."""
+
+    circuit: Circuit
+    instance: str
+    param: str
+    start: float
+    stop: float
+    steps: int = 20
+    options: dict[str, object] = {}
+
+
+class SweepSeries(BaseModel):
+    id: str
+    label: str
+    unit: str
+    values: list[float | None]
+
+
+class SweepResponse(BaseModel):
+    engine: str
+    x: list[float]
+    x_label: str
+    x_unit: str
+    series: list[SweepSeries]
+
+
 class SimulationRunRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

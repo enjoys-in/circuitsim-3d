@@ -23,6 +23,9 @@ interface WorkspaceUiValue {
   verifyOpen: boolean;
   openVerify: () => void;
   closeVerify: () => void;
+  sweepOpen: boolean;
+  openSweep: () => void;
+  closeSweep: () => void;
   panelTab: PanelTab;
   setPanelTab: (tab: PanelTab) => void;
   assistantAction: AssistantAction | null;
@@ -39,6 +42,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [codeOpen, setCodeOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [sweepOpen, setSweepOpen] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>("inspect");
   const [assistantAction, setAssistantAction] = useState<AssistantAction | null>(null);
   const actionSeq = useRef(0);
@@ -56,6 +60,9 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       verifyOpen,
       openVerify: () => setVerifyOpen(true),
       closeVerify: () => setVerifyOpen(false),
+      sweepOpen,
+      openSweep: () => setSweepOpen(true),
+      closeSweep: () => setSweepOpen(false),
       panelTab,
       setPanelTab,
       assistantAction,
@@ -69,7 +76,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       panelCollapsed,
       togglePanel: () => setPanelCollapsed((v) => !v),
     }),
-    [mode, codeOpen, examplesOpen, verifyOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed],
+    [mode, codeOpen, examplesOpen, verifyOpen, sweepOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }

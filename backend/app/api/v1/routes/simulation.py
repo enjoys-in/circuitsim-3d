@@ -8,6 +8,8 @@ from app.core.exceptions import DomainError
 from app.schemas.simulation import (
     SimulationRequest,
     SimulationResult,
+    SweepRequest,
+    SweepResponse,
     VerifyRequest,
     VerifyResponse,
 )
@@ -53,3 +55,24 @@ async def verify_circuit(
     except DomainError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     return VerifyResponse(**outcome)
+
+
+@router.post("/sweep", response_model=SweepResponse)
+async def sweep_circuit(
+    payload: SweepRequest,
+    service: SimulationServiceDep,
+) -> SweepResponse:
+    try:
+        outcome = await run_in_threadpool(
+            service.sweep,
+            payload.circuit,
+            instance=payload.instance,
+            param=payload.param,
+            start=payload.start,
+            stop=payload.stop,
+            steps=payload.steps,
+            options=payload.options,
+        )
+    except DomainError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    return SweepResponse(**outcome)

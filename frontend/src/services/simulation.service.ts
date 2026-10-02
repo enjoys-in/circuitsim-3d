@@ -2,6 +2,7 @@ import type {
   Circuit,
   SimulationOptions,
   SimulationResult,
+  SweepResult,
   VerifyResponse,
   VerifyVector,
 } from "../domain";
@@ -25,5 +26,13 @@ export class SimulationService {
       { circuit, vectors, options },
       request,
     );
+  }
+
+  sweep(
+    circuit: Circuit,
+    params: { instance: string; param: string; start: number; stop: number; steps: number },
+    request?: RequestOptions,
+  ): Promise<SweepResult> {
+    return this.http.post<SweepResult>("/simulation/sweep", { circuit, ...params }, request);
   }
 }
