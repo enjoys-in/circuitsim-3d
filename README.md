@@ -10,6 +10,14 @@ An open-source, browser-based electronics playground: draw a **schematic**, watc
 **simulate** (analog, digital, and MCU firmware), then flip to a **PCB editor** with a
 real **three.js 3D** view — all in one app.
 
+## Why I built this
+
+I'm turning a spare **Asus phone (Linux + a custom HAL)** into a small device driven by an
+**ESP32** — but every iteration meant re-wiring the breadboard and re-flashing firmware, and
+chasing the same wiring/firmware bugs over and over. So I built CircuitSim to **draw the
+circuit, wire the ESP32, write the firmware, and watch it run before touching real hardware**.
+It grew into a full playground.
+
 > [!NOTE]
 > Monorepo: a **FastAPI** backend (simulation engines + catalog + realtime) and a
 > **React + Vite + TypeScript** frontend (schematic canvas, PCB editor, 3D).
