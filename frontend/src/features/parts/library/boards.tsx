@@ -43,6 +43,10 @@ const STYLES: Record<string, BoardStyle> = {
   banana_pi_m2: { color: "green", orientation: "horizontal", module: "qfp", moduleLabel: "H3" },
   radxa_rock5: { color: "black", orientation: "horizontal", module: "qfp", moduleLabel: "RK3588" },
   radxa_zero: { color: "purple", orientation: "horizontal", module: "qfp", moduleLabel: "H616" },
+  beaglebone_black: { color: "green", orientation: "horizontal", module: "qfp", moduleLabel: "AM335x" },
+  jetson_nano: { color: "green", orientation: "horizontal", module: "qfp", moduleLabel: "TEGRA X1" },
+  milkv_duo: { color: "red", orientation: "horizontal", module: "qfp", moduleLabel: "CV1800B" },
+  milkv_mars: { color: "purple", orientation: "horizontal", module: "qfp", moduleLabel: "JH7110" },
 };
 
 const PITCH = 16;

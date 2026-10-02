@@ -294,6 +294,10 @@ BOARD_PROFILES: dict[str, BoardProfile] = {
     "banana_pi_m2": _sbc("Banana Pi M2 Zero", "allwinner-h3"),
     "radxa_rock5": _sbc("Radxa Rock 5B", "rockchip-rk3588"),
     "radxa_zero": _sbc("Radxa Zero", "allwinner-h616"),
+    "beaglebone_black": _sbc("BeagleBone Black", "ti-am335x"),
+    "jetson_nano": _sbc("NVIDIA Jetson Nano", "tegra-x1"),
+    "milkv_duo": _sbc("Milk-V Duo (RISC-V)", "sophgo-cv1800b"),
+    "milkv_mars": _sbc("Milk-V Mars (RISC-V)", "starfive-jh7110"),
 }
 
 BOARD_KEYS = frozenset(BOARD_PROFILES)

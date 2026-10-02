@@ -47,6 +47,16 @@ servo_write("gpio13", angle)
 print(f"angle = {angle}")
 `;
 
+const PI_GPIO_LED = `# Blink an LED on BCM GPIO17 (RPi.GPIO / gpiozero style)
+digital_write("gpio17", tick % 2)
+print("on" if tick % 2 else "off")
+`;
+
+const S3_BLINK = `# ESP32-S3: blink the onboard RGB LED and an external LED
+digital_write("gpio48", tick % 2)
+digital_write("gpio5", tick % 2)
+`;
+
 export const MCU_EXAMPLES: Example[] = [
   {
     id: "esp32-blink",
@@ -176,5 +186,43 @@ export const MCU_EXAMPLES: Example[] = [
       ],
     ),
     options: { ticks: 18, tick_ms: 300 },
+  },
+  {
+    id: "rpi-gpio-led",
+    title: "Raspberry Pi GPIO LED",
+    category: "MCU",
+    description: "Blink an LED on BCM GPIO17 from a Raspberry Pi 4 — 330 Ω to ground",
+    circuit: build(
+      [
+        ["PI", "raspberry_pi_4", 0, 0, { firmware: PI_GPIO_LED }],
+        ["R1", "resistor", 360, 150, { resistance: 330 }],
+        ["LED1", "led", 520, 120, { color: "red" }],
+      ],
+      [
+        ["PI:gpio17", "R1:a"],
+        ["R1:b", "LED1:anode"],
+        ["LED1:cathode", "PI:gnd"],
+      ],
+    ),
+    options: { ticks: 16, tick_ms: 400 },
+  },
+  {
+    id: "esp32s3-blink",
+    title: "ESP32-S3 blink",
+    category: "MCU",
+    description: "ESP32-S3 blinks its onboard LED and an external LED on GPIO5",
+    circuit: build(
+      [
+        ["MCU1", "esp32_s3", 0, 0, { firmware: S3_BLINK }],
+        ["R1", "resistor", 360, 150, { resistance: 220 }],
+        ["LED1", "led", 520, 120, { color: "blue" }],
+      ],
+      [
+        ["MCU1:gpio5", "R1:a"],
+        ["R1:b", "LED1:anode"],
+        ["LED1:cathode", "MCU1:gnd"],
+      ],
+    ),
+    options: { ticks: 16, tick_ms: 400 },
   },
 ];
