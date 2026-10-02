@@ -16,6 +16,8 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       [`${MOD} + C`, "Copy the selected part"],
       [`${MOD} + V`, "Paste at the cursor"],
       [`${MOD} + D`, "Duplicate the selected part"],
+      [`${MOD} + Z`, "Undo"],
+      [`${MOD} + Y / ${MOD} + Shift + Z`, "Redo"],
       ["Delete / Backspace", "Remove the selected part or wire"],
       ["Drag from palette", "Add a part to the board"],
     ],

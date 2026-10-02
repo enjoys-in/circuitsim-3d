@@ -26,6 +26,17 @@ export function useBoardShortcuts(pointer: RefObject<{ x: number; y: number }>):
         }
       }
       if (!(event.ctrlKey || event.metaKey)) return;
+      // Undo / redo work with or without a selection.
+      if (key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        actions.undo();
+        return;
+      }
+      if ((key === "z" && event.shiftKey) || key === "y") {
+        event.preventDefault();
+        actions.redo();
+        return;
+      }
       if (key === "d" && selectedNodeId) {
         event.preventDefault();
         actions.duplicateNode(selectedNodeId);

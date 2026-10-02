@@ -20,6 +20,7 @@ import { pickWireColor } from "./model/wireColors";
 import type { PartNodeType, WireEdgeType } from "./nodes/types";
 import { clearShareHash, readSharedCircuit } from "../share/shareCircuit";
 import { useGraphActions } from "./useGraphActions";
+import { useBoardHistory } from "./useBoardHistory";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
 
@@ -62,7 +63,12 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
-  const { actions, hasClipboard } = useGraphActions(nodesRef, setNodes, setEdges, catalog, fitView);
+  const { actions: baseActions, hasClipboard } = useGraphActions(nodesRef, setNodes, setEdges, catalog, fitView);
+  const history = useBoardHistory(nodes, edges, setNodes, setEdges);
+  const actions = useMemo(
+    () => ({ ...baseActions, undo: history.undo, redo: history.redo }),
+    [baseActions, history.undo, history.redo],
+  );
 
   // While a part is being dragged we only move pixels — the electrical circuit is
   // unchanged — so freeze the derived circuit to avoid rebuilding it every frame on

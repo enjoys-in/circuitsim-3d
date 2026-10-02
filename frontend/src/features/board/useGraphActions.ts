@@ -31,7 +31,7 @@ export function useGraphActions(
   setEdges: SetEdges,
   catalog: ReadonlyMap<string, ComponentDef>,
   fitView: (options?: { padding?: number; duration?: number }) => void,
-): { actions: CircuitActions; hasClipboard: boolean } {
+): { actions: Omit<CircuitActions, "undo" | "redo">; hasClipboard: boolean } {
   const clipboard = useRef<Clipboard | null>(null);
   const [hasClipboard, setHasClipboard] = useState(false);
 
@@ -56,7 +56,7 @@ export function useGraphActions(
     [setNodes],
   );
 
-  const actions = useMemo<CircuitActions>(
+  const actions = useMemo<Omit<CircuitActions, "undo" | "redo">>(
     () => ({
       updateParams: (id, patch: Params) => patchNode(id, (data) => ({ params: { ...data.params, ...patch } })),
       setLabel: (id, label) => patchNode(id, () => ({ label })),

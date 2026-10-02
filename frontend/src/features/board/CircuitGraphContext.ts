@@ -35,6 +35,8 @@ export interface CircuitActions {
   pasteAt: (position: Position) => void;
   clear: () => void;
   loadCircuit: (circuit: Circuit) => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 export const CircuitGraphContext = createContext<CircuitGraphValue | null>(null);
