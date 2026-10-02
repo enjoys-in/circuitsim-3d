@@ -32,6 +32,9 @@ interface WorkspaceUiValue {
   acOpen: boolean;
   openAc: () => void;
   closeAc: () => void;
+  ercOpen: boolean;
+  openErc: () => void;
+  closeErc: () => void;
   panelTab: PanelTab;
   setPanelTab: (tab: PanelTab) => void;
   assistantAction: AssistantAction | null;
@@ -55,6 +58,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [sweepOpen, setSweepOpen] = useState(false);
   const [scopeOpen, setScopeOpen] = useState(false);
   const [acOpen, setAcOpen] = useState(false);
+  const [ercOpen, setErcOpen] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>("inspect");
   const [assistantAction, setAssistantAction] = useState<AssistantAction | null>(null);
   const actionSeq = useRef(0);
@@ -83,6 +87,9 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       acOpen,
       openAc: () => setAcOpen(true),
       closeAc: () => setAcOpen(false),
+      ercOpen,
+      openErc: () => setErcOpen(true),
+      closeErc: () => setErcOpen(false),
       panelTab,
       setPanelTab,
       assistantAction,

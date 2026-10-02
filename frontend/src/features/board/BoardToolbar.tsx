@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, openVerify, openSweep, openScope, openAc, setMode, flowAnim, toggleFlow, heatmap, toggleHeatmap } = useWorkspaceUi();
+  const { openCode, openVerify, openSweep, openScope, openAc, openErc, setMode, flowAnim, toggleFlow, heatmap, toggleHeatmap } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -83,6 +83,14 @@ export function BoardToolbar() {
           title="Verify with a truth table / test vectors"
         >
           ✓ Verify
+        </Button>
+        <Button
+          size="sm"
+          onClick={openErc}
+          disabled={circuit.instances.length === 0}
+          title="Electrical rule check — floating pins, missing ground, shorts"
+        >
+          ⚠ ERC
         </Button>
         <Button
           size="sm"

@@ -13,6 +13,7 @@ import { ScopeSheet } from "../scope/ScopeSheet";
 import { SweepSheet } from "../sweep/SweepSheet";
 import { AcSheet } from "../sweep/AcSheet";
 import { VerifySheet } from "../verify/VerifySheet";
+import { ErcSheet } from "../erc/ErcSheet";
 import { InspectorSkeleton } from "../inspector/InspectorSkeleton";
 import { PcbProvider } from "../pcb/PcbProvider";
 import { ResultsSkeleton } from "../results/ResultsSkeleton";
@@ -75,6 +76,7 @@ function WorkspaceBody() {
       <CodeSheet />
       <LevelGallery />
       <VerifySheet />
+      <ErcSheet />
       <SweepSheet />
       <AcSheet />
       <ScopeSheet />
