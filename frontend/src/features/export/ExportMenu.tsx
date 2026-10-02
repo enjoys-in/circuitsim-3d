@@ -31,6 +31,23 @@ export function ExportMenu() {
     const { buildSchematicSvg } = await import("./schematicSvg");
     downloadText(`circuitsim-schematic-${stamp()}.svg`, buildSchematicSvg(nodes, edges), "image/svg+xml");
   };
+  const printSchematic = async () => {
+    const { buildSchematicSvg } = await import("./schematicSvg");
+    const svg = buildSchematicSvg(nodes, edges);
+    const win = window.open("", "_blank");
+    if (!win) {
+      window.alert("Allow pop-ups to print the schematic.");
+      return;
+    }
+    win.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>CircuitSim schematic</title>` +
+        `<style>html,body{margin:0;background:#fff}svg{max-width:100%;height:auto}@page{margin:12mm}</style>` +
+        `</head><body>${svg}` +
+        `<script>window.onload=function(){setTimeout(function(){window.print()},200)}<\/script>` +
+        `</body></html>`,
+    );
+    win.document.close();
+  };
   const downloadPng = async () => {
     const { buildSchematicSvg } = await import("./schematicSvg");
     const { svgToPngBlob } = await import("./toPng");
@@ -113,6 +130,9 @@ export function ExportMenu() {
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadPng()}>
               Schematic (.png)
+            </Button>
+            <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void printSchematic()}>
+              Print / PDF
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={downloadJson}>
               Circuit (.json)
