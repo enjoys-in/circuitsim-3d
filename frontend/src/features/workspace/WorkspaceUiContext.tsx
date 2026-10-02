@@ -41,6 +41,8 @@ interface WorkspaceUiValue {
   togglePanel: () => void;
   flowAnim: boolean;
   toggleFlow: () => void;
+  heatmap: boolean;
+  toggleHeatmap: () => void;
 }
 
 const WorkspaceUiContext = createContext<WorkspaceUiValue | null>(null);
@@ -58,6 +60,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const actionSeq = useRef(0);
   const [panelCollapsed, setPanelCollapsed] = usePersistentState<boolean>("circuitsim.panelCollapsed", false);
   const [flowAnim, setFlowAnim] = usePersistentState<boolean>("circuitsim.flowAnim", false);
+  const [heatmap, setHeatmap] = usePersistentState<boolean>("circuitsim.heatmap", false);
   const value = useMemo<WorkspaceUiValue>(
     () => ({
       mode,
@@ -94,8 +97,10 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       togglePanel: () => setPanelCollapsed((v) => !v),
       flowAnim,
       toggleFlow: () => setFlowAnim((v) => !v),
+      heatmap,
+      toggleHeatmap: () => setHeatmap((v) => !v),
     }),
-    [mode, codeOpen, examplesOpen, verifyOpen, sweepOpen, scopeOpen, acOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed, flowAnim, setFlowAnim],
+    [mode, codeOpen, examplesOpen, verifyOpen, sweepOpen, scopeOpen, acOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed, flowAnim, setFlowAnim, heatmap, setHeatmap],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }

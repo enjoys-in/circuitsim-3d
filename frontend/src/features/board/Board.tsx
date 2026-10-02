@@ -42,7 +42,7 @@ function EmptyBoard() {
 export default function Board() {
   const graph = useCircuitGraph();
   const { status } = useCatalog();
-  const { flowAnim } = useWorkspaceUi();
+  const { flowAnim, heatmap } = useWorkspaceUi();
   const contextMenu = useContextMenu();
   const pointer = useRef({ x: 0, y: 0 });
   useBoardShortcuts(pointer);
@@ -61,7 +61,7 @@ export default function Board() {
       onPointerMove={(e) => (pointer.current = { x: e.clientX, y: e.clientY })}
     >
       <BoardToolbar />
-      <div className={`board__canvas${flowAnim ? " flow-anim" : ""}`}>
+      <div className={`board__canvas${flowAnim ? " flow-anim" : ""}${heatmap ? " heatmap" : ""}`}>
         <ReactFlow
           nodes={graph.nodes}
           edges={graph.edges}

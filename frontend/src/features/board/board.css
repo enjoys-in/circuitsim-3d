@@ -228,6 +228,17 @@
   opacity: 0.95;
 }
 
+/* Node-voltage heatmap: colour each wire by its net voltage (blue low -> red high).
+   Overrides the inline wire colour; hides the shimmer/flow for a clean heat view. */
+.heatmap .wire__body {
+  stroke: var(--heat, #334155) !important;
+}
+
+.heatmap .wire__shine,
+.heatmap .wire__flow {
+  opacity: 0;
+}
+
 .wire__selected {
   fill: none;
   stroke: #fbbf24;

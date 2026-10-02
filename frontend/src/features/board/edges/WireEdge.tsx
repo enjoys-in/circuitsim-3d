@@ -1,4 +1,4 @@
-import { memo, useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useRef, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useReactFlow, type EdgeProps } from "@xyflow/react";
 import { formatSI } from "../../../shared/lib/format";
 import type { Position } from "../../../domain";
@@ -18,6 +18,13 @@ function flowDuration(amps: number): number {
 function flowColor(amps: number): string {
   const s = Math.min(Math.abs(amps) / 0.02, 4) / 4;
   return `hsl(${Math.round(190 - 170 * s)}, 90%, 62%)`;
+}
+
+// Map a node voltage to a blue(low)->red(high) heat colour, referenced to 12 V.
+function heatColor(volts: number | null | undefined): string {
+  if (volts === null || volts === undefined) return "#334155";
+  const s = Math.min(Math.abs(volts) / 12, 1);
+  return `hsl(${Math.round(220 - 220 * s)}, 85%, 58%)`;
 }
 
 function describe(engine: string | null, value: number | null | undefined): { active: boolean; text: string | null } {
@@ -140,7 +147,7 @@ function WireEdgeImpl({
   };
 
   return (
-    <g className="wire" onDoubleClick={addJoint}>
+    <g className="wire" onDoubleClick={addJoint} style={{ ["--heat" as string]: heatColor(value) } as CSSProperties}>
       <path d={path} className="wire__shadow" />
       <BaseEdge id={id} path={path} interactionWidth={18} style={{ stroke: color }} className="wire__body" />
       <path d={path} className="wire__shine" />

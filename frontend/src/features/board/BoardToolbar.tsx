@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, openVerify, openSweep, openScope, openAc, setMode, flowAnim, toggleFlow } = useWorkspaceUi();
+  const { openCode, openVerify, openSweep, openScope, openAc, setMode, flowAnim, toggleFlow, heatmap, toggleHeatmap } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -115,6 +115,14 @@ export function BoardToolbar() {
           title="Animate current flow along wires (speed & colour scale with current)"
         >
           ⚡ Flow
+        </Button>
+        <Button
+          size="sm"
+          variant={heatmap ? "primary" : "ghost"}
+          onClick={toggleHeatmap}
+          title="Colour wires by node voltage (blue = low, red = high)"
+        >
+          ░ Heat
         </Button>
         <SoundToggle />
         <Button size="sm" onClick={clear}>
