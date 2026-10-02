@@ -3,6 +3,7 @@ import type { InstanceState } from "../../domain";
 import { toNumber } from "../../shared/lib/format";
 import { RangeField, SelectField, TextField, ToggleField } from "../../shared/ui/Field";
 import { CodePreview } from "./CodePreview";
+import { MemoryEditor } from "./MemoryEditor";
 import { coerceValue, type ParamDescriptor, type ParamKind } from "./paramSchema";
 
 interface EditorProps {
@@ -73,6 +74,11 @@ function FirmwareParamEditor({ value, state }: EditorProps) {
   return <CodePreview value={String(value ?? "")} fault={state?.fault} />;
 }
 
+function MemoryParamEditor({ descriptor, value, onChange }: EditorProps) {
+  const mem = descriptor.memory ?? { words: 16, bits: 4 };
+  return <MemoryEditor words={mem.words} bits={mem.bits} value={value} onChange={onChange} />;
+}
+
 const EDITORS: Record<ParamKind, ComponentType<EditorProps>> = {
   value: ValueEditor,
   ramp: RampEditor,
@@ -80,6 +86,7 @@ const EDITORS: Record<ParamKind, ComponentType<EditorProps>> = {
   toggle: ToggleEditor,
   range: RangeEditor,
   firmware: FirmwareParamEditor,
+  memory: MemoryParamEditor,
 };
 
 export function ParamEditor(props: EditorProps) {

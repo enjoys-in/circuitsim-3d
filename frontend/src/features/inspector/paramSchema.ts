@@ -2,7 +2,7 @@ import type { ComponentDef, Params } from "../../domain";
 import { humanize } from "../../shared/lib/format";
 import { LED_COLORS } from "../parts/paint";
 
-export type ParamKind = "firmware" | "color" | "toggle" | "range" | "value" | "ramp";
+export type ParamKind = "firmware" | "color" | "toggle" | "range" | "value" | "ramp" | "memory";
 
 export interface ParamDescriptor {
   key: string;
@@ -10,6 +10,7 @@ export interface ParamDescriptor {
   kind: ParamKind;
   unit?: string;
   options?: { value: string; label: string }[];
+  memory?: { words: number; bits: number };
 }
 
 const HIDDEN = new Set(["mcu", "bus", "product_url", "vendor", "image", "price", "sku"]);
@@ -69,9 +70,18 @@ const UNITS: Record<string, string> = {
 
 const COLOR_OPTIONS = Object.keys(LED_COLORS).map((c) => ({ value: c, label: c }));
 
+// A ROM-like part exposes a0.. address pins and d0.. data pins; its `data` param is the program.
+function memoryMeta(def: ComponentDef): { words: number; bits: number } | undefined {
+  const addr = def.pins.filter((p) => /^a\d+$/.test(p.name)).length;
+  const bits = def.pins.filter((p) => /^d\d+$/.test(p.name)).length;
+  if (addr === 0 || bits === 0) return undefined;
+  return { words: 1 << addr, bits };
+}
+
 function kindOf(def: ComponentDef, key: string): ParamKind {
   if (key === "firmware") return "firmware";
   if (key === "color") return "color";
+  if (key === "data" && memoryMeta(def)) return "memory";
   if (TOGGLES.has(key) && TOGGLE_PARTS.has(def.key)) return "toggle";
   if (RANGES.has(key)) return "range";
   return "value";
@@ -81,13 +91,17 @@ export function describeParams(def: ComponentDef, params: Params): ParamDescript
   const keys = [...new Set([...Object.keys(def.default_params), ...Object.keys(params)])].filter(
     (key) => !HIDDEN.has(key) && !key.endsWith("_end"),
   );
-  const base = keys.map<ParamDescriptor>((key) => ({
-    key,
-    label: humanize(key),
-    kind: kindOf(def, key),
-    unit: UNITS[key],
-    options: key === "color" ? COLOR_OPTIONS : undefined,
-  }));
+  const base = keys.map<ParamDescriptor>((key) => {
+    const kind = kindOf(def, key);
+    return {
+      key,
+      label: humanize(key),
+      kind,
+      unit: UNITS[key],
+      options: key === "color" ? COLOR_OPTIONS : undefined,
+      memory: kind === "memory" ? memoryMeta(def) : undefined,
+    };
+  });
   if (def.category !== "sensor") return base;
   const ramps = keys
     .filter((key) => !NON_RAMP.has(key) && typeof def.default_params[key] === "number")
