@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from "react";
+import { lazy, Suspense, useState, type DragEvent } from "react";
 import { useCatalog } from "../catalog/CatalogContext";
 import { useCircuitActions, useCircuitGraph } from "../board/CircuitGraphContext";
 import { EmptyState } from "../../shared/ui/EmptyState";
@@ -6,10 +6,12 @@ import { DRAG_MIME } from "../../shared/constants";
 import { readPreset } from "../parts/dragPayload";
 import type { PcbRenderMode } from "./canvas/Footprint";
 import { PcbCanvas } from "./canvas/PcbCanvas";
-import { Pcb3DScene } from "./canvas/Pcb3DScene";
 import { DrcPanel } from "./DrcPanel";
 import { PcbToolbar, type PcbViewMode } from "./PcbToolbar";
 import "./pcb.css";
+
+// three.js is heavy; load it only when the user switches to the 3D view.
+const Pcb3DScene = lazy(() => import("./canvas/Pcb3DScene"));
 
 export default function PcbView() {
   const { circuit } = useCircuitGraph();
@@ -44,7 +46,15 @@ export default function PcbView() {
   return (
     <section className="pcb">
       <PcbToolbar mode={mode} onMode={setMode} render={render} onRender={setRender} />
-      <div className="pcb__stage">{mode === "2d" ? <PcbCanvas render={render} /> : <Pcb3DScene />}</div>
+      <div className="pcb__stage">
+        {mode === "2d" ? (
+          <PcbCanvas render={render} />
+        ) : (
+          <Suspense fallback={<div className="pcb__stage-loading">Loading 3D…</div>}>
+            <Pcb3DScene />
+          </Suspense>
+        )}
+      </div>
       {mode === "2d" && <DrcPanel />}
     </section>
   );

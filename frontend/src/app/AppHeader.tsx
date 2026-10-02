@@ -6,7 +6,7 @@ export function AppHeader() {
       </span>
       <span className="app__name">CircuitSim</span>
       <span className="app__tag">Wire real parts, flash firmware, watch it run</span>
-      <span className="app__credit">Made by Enjoys</span>
+      <span className="app__credit">Made by Enjoys · v{__APP_VERSION__}</span>
     </header>
   );
 }

@@ -5,6 +5,7 @@ import {
   useNodesState,
   useReactFlow,
   type Connection,
+  type NodeChange,
   type OnSelectionChangeFunc,
 } from "@xyflow/react";
 import type { ComponentDef, Circuit, Params } from "../../domain";
@@ -61,6 +62,20 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
   nodesRef.current = nodes;
 
   const { actions, hasClipboard } = useGraphActions(nodesRef, setNodes, setEdges, catalog, fitView);
+
+  // While a part is being dragged we only move pixels — the electrical circuit is
+  // unchanged — so freeze the derived circuit to avoid rebuilding it every frame on
+  // big boards (keeps dragging smooth).
+  const [dragging, setDragging] = useState(false);
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<PartNodeType>[]) => {
+      for (const change of changes) {
+        if (change.type === "position" && typeof change.dragging === "boolean") setDragging(change.dragging);
+      }
+      onNodesChange(changes);
+    },
+    [onNodesChange],
+  );
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -121,8 +136,14 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
     [],
   );
 
-  const circuit = useMemo(() => new CircuitBuilder().fromNodes(nodes).fromEdges(edges).build(), [nodes, edges]);
-  const circuitKey = useMemo(() => electricalKey(circuit), [circuit]);
+  const frozen = useRef<{ circuit: Circuit; key: string } | null>(null);
+  const circuit = useMemo(() => {
+    if (dragging && frozen.current) return frozen.current.circuit;
+    const built = new CircuitBuilder().fromNodes(nodes).fromEdges(edges).build();
+    frozen.current = { circuit: built, key: electricalKey(built) };
+    return built;
+  }, [nodes, edges, dragging]);
+  const circuitKey = useMemo(() => frozen.current?.key ?? electricalKey(circuit), [circuit]);
 
   // Restore the last circuit once the catalog is ready, then keep saving it so a page
   // refresh resumes the work instead of starting from a blank board.
@@ -159,7 +180,7 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
     () => ({
       nodes,
       edges,
-      onNodesChange,
+      onNodesChange: handleNodesChange,
       onEdgesChange,
       onConnect,
       isValidConnection,
@@ -175,7 +196,7 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
     [
       nodes,
       edges,
-      onNodesChange,
+      handleNodesChange,
       onEdgesChange,
       onConnect,
       isValidConnection,
