@@ -1,4 +1,10 @@
-import type { Circuit, SimulationOptions, SimulationResult } from "../domain";
+import type {
+  Circuit,
+  SimulationOptions,
+  SimulationResult,
+  VerifyResponse,
+  VerifyVector,
+} from "../domain";
 import type { IHttpClient, RequestOptions } from "./http";
 
 export class SimulationService {
@@ -6,5 +12,13 @@ export class SimulationService {
 
   run(circuit: Circuit, options: SimulationOptions, request?: RequestOptions): Promise<SimulationResult> {
     return this.http.post<SimulationResult>("/simulation/run", { circuit, options }, request);
+  }
+
+  verify(
+    circuit: Circuit,
+    vectors: VerifyVector[],
+    request?: RequestOptions,
+  ): Promise<VerifyResponse> {
+    return this.http.post<VerifyResponse>("/simulation/verify", { circuit, vectors }, request);
   }
 }

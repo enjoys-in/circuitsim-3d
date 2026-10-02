@@ -81,3 +81,30 @@ export interface SimulationResult {
   engine: string;
   results: SimulationOutput;
 }
+
+export interface VerifyVector {
+  inputs: Record<string, number>;
+  expected?: Record<string, number> | null;
+}
+
+export interface VerifyPort {
+  id: string;
+  label: string;
+}
+
+export interface VerifyRow {
+  inputs: Record<string, number>;
+  outputs: Record<string, number | null>;
+  expected?: Record<string, number> | null;
+  passed?: boolean | null;
+}
+
+export interface VerifyResponse {
+  engine: string;
+  inputs: VerifyPort[];
+  outputs: VerifyPort[];
+  rows: VerifyRow[];
+  passed: number;
+  failed: number;
+  total: number;
+}

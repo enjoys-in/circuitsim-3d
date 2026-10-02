@@ -8,6 +8,7 @@ import { CircuitGraphProvider } from "../board/CircuitGraphProvider";
 import { HighlightProvider } from "../board/HighlightContext";
 import { CodeSheet } from "../codeSheet/CodeSheet";
 import { LevelGallery } from "../examples/LevelGallery";
+import { VerifySheet } from "../verify/VerifySheet";
 import { InspectorSkeleton } from "../inspector/InspectorSkeleton";
 import { PcbProvider } from "../pcb/PcbProvider";
 import { ResultsSkeleton } from "../results/ResultsSkeleton";
@@ -69,6 +70,7 @@ function WorkspaceBody() {
       </div>
       <CodeSheet />
       <LevelGallery />
+      <VerifySheet />
     </>
   );
 }

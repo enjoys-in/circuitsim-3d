@@ -22,6 +22,44 @@ class SimulationResult(BaseModel):
     results: dict[str, object]
 
 
+class VerifyVector(BaseModel):
+    """One test case: input part values keyed by instance id, with optional expected outputs."""
+
+    inputs: dict[str, int]
+    expected: dict[str, int] | None = None
+
+
+class VerifyRequest(BaseModel):
+    """Run a circuit against a suite of input vectors and compare to expected outputs."""
+
+    circuit: Circuit
+    vectors: list[VerifyVector]
+    engine: str | None = None
+    options: dict[str, object] = {}
+
+
+class VerifyPort(BaseModel):
+    id: str
+    label: str
+
+
+class VerifyRow(BaseModel):
+    inputs: dict[str, int]
+    outputs: dict[str, int | None]
+    expected: dict[str, int] | None = None
+    passed: bool | None = None
+
+
+class VerifyResponse(BaseModel):
+    engine: str
+    inputs: list[VerifyPort]
+    outputs: list[VerifyPort]
+    rows: list[VerifyRow]
+    passed: int
+    failed: int
+    total: int
+
+
 class SimulationRunRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

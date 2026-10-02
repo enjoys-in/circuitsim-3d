@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, setMode } = useWorkspaceUi();
+  const { openCode, openVerify, setMode } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -75,6 +75,14 @@ export function BoardToolbar() {
         </select>
         <Button size="sm" onClick={openCode} title="Firmware code & flash">
           {"</>"} Code
+        </Button>
+        <Button
+          size="sm"
+          onClick={openVerify}
+          disabled={circuit.instances.length === 0}
+          title="Verify with a truth table / test vectors"
+        >
+          ✓ Verify
         </Button>
         <SoundToggle />
         <Button size="sm" onClick={clear}>

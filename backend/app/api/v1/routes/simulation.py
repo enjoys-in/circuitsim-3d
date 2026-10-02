@@ -5,7 +5,12 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import BufferDep, SimulationServiceDep
 from app.core.exceptions import DomainError
-from app.schemas.simulation import SimulationRequest, SimulationResult
+from app.schemas.simulation import (
+    SimulationRequest,
+    SimulationResult,
+    VerifyRequest,
+    VerifyResponse,
+)
 
 router = APIRouter(prefix="/simulation", tags=["simulation"])
 
@@ -29,3 +34,22 @@ async def run_simulation(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await buffer.push("simulation", outcome)
     return SimulationResult(**outcome)
+
+
+@router.post("/verify", response_model=VerifyResponse)
+async def verify_circuit(
+    payload: VerifyRequest,
+    service: SimulationServiceDep,
+) -> VerifyResponse:
+    vectors = [{"inputs": v.inputs, "expected": v.expected} for v in payload.vectors]
+    try:
+        outcome = await run_in_threadpool(
+            service.verify,
+            payload.circuit,
+            vectors,
+            engine=payload.engine,
+            options=payload.options,
+        )
+    except DomainError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    return VerifyResponse(**outcome)

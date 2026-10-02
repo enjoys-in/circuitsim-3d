@@ -11,6 +11,9 @@ interface WorkspaceUiValue {
   examplesOpen: boolean;
   openExamples: () => void;
   closeExamples: () => void;
+  verifyOpen: boolean;
+  openVerify: () => void;
+  closeVerify: () => void;
   panelCollapsed: boolean;
   togglePanel: () => void;
 }
@@ -21,6 +24,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<WorkspaceMode>("schematic");
   const [codeOpen, setCodeOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = usePersistentState<boolean>("circuitsim.panelCollapsed", false);
   const value = useMemo<WorkspaceUiValue>(
     () => ({
@@ -32,10 +36,13 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       examplesOpen,
       openExamples: () => setExamplesOpen(true),
       closeExamples: () => setExamplesOpen(false),
+      verifyOpen,
+      openVerify: () => setVerifyOpen(true),
+      closeVerify: () => setVerifyOpen(false),
       panelCollapsed,
       togglePanel: () => setPanelCollapsed((v) => !v),
     }),
-    [mode, codeOpen, examplesOpen, panelCollapsed, setPanelCollapsed],
+    [mode, codeOpen, examplesOpen, verifyOpen, panelCollapsed, setPanelCollapsed],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }
