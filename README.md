@@ -34,6 +34,10 @@ It grew into a full playground.
 |----------------|------------|--------------|
 | ![ESP32 firmware](docs/screenshots/04-esp32-firmware.png) | ![Routed PCB](docs/screenshots/05-pcb.png) | ![AI assistant](docs/screenshots/06-ai-assistant.png) |
 
+| 3D board view |
+|---------------|
+| ![3D board view](docs/screenshots/07-pcb-3d.png) |
+
 ---
 
 ## Features
