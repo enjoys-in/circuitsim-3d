@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useCatalog } from "../catalog/CatalogContext";
 import { useCircuitGraph } from "../board/CircuitGraphContext";
 import { cx } from "../../shared/lib/format";
@@ -6,6 +7,15 @@ import { NumberInput } from "../../shared/ui/NumberInput";
 import { getFootprint } from "./model/footprints";
 import { fromMm, padId, RECT_PAD, ROUND_PAD, toMm } from "./model/pcbTypes";
 import { usePcb } from "./PcbContext";
+
+const VALUE_KEYS = ["resistance", "capacitance", "inductance", "voltage", "value", "color", "max_current"];
+function valueOf(def: { default_params: Record<string, unknown> }, params: Record<string, unknown>): string {
+  for (const key of VALUE_KEYS) {
+    const v = params[key] ?? def.default_params[key];
+    if (v !== undefined && v !== null && v !== "") return String(v);
+  }
+  return "";
+}
 
 export function PcbInspector() {
   const pcb = usePcb();
@@ -32,6 +42,19 @@ export function PcbInspector() {
     }));
 
   const partScale = placement?.padScale ?? 1;
+  const bom = useMemo(() => {
+    const groups = new Map<string, { name: string; value: string; items: { id: string; label: string }[] }>();
+    for (const i of circuit.instances) {
+      const d = byKey.get(i.component_key);
+      if (!d) continue;
+      const value = valueOf(d, i.params);
+      const key = `${d.name}|${value}`;
+      const group = groups.get(key) ?? { name: d.name, value, items: [] };
+      group.items.push({ id: i.id, label: i.label || i.id });
+      groups.set(key, group);
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [circuit, byKey]);
   const selectedPad =
     footprint && placement && pcb.selectedPadId
       ? footprint.pads.find((p) => padId(inst!.id, p.name) === pcb.selectedPadId)
@@ -66,6 +89,36 @@ export function PcbInspector() {
           />
         </div>
       </section>
+
+      {bom.length > 0 && (
+        <section className="pcb-inspector__block">
+          <h3>Bill of materials</h3>
+          <div className="pcb-bom">
+            {bom.map((group) => (
+              <div key={`${group.name}|${group.value}`} className="pcb-bom__row">
+                <div className="pcb-bom__head">
+                  <span className="pcb-bom__qty">{group.items.length}×</span>
+                  <span className="pcb-bom__name">{group.name}</span>
+                  {group.value && <span className="pcb-bom__value">{group.value}</span>}
+                </div>
+                <div className="pcb-bom__refs">
+                  {group.items.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={cx("pcb-bom__ref", pcb.selectedId === item.id && "pcb-bom__ref--on")}
+                      onClick={() => pcb.selectComponent(item.id)}
+                      title="Highlight this part on the board"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {inst && def && placement && footprint ? (
         <>

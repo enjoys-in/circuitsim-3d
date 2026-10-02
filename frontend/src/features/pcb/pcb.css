@@ -652,3 +652,55 @@
 .fp--real .fp__body {
   fill: rgba(12, 30, 22, 0.25);
 }
+/* Interactive BOM in the PCB inspector */
+.pcb-bom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pcb-bom__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pcb-bom__head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+}
+.pcb-bom__qty {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.pcb-bom__name {
+  color: var(--text);
+}
+.pcb-bom__value {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.pcb-bom__refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pcb-bom__ref {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font: 600 11px var(--mono);
+  cursor: pointer;
+}
+.pcb-bom__ref:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.pcb-bom__ref--on {
+  background: var(--accent);
+  color: #03131c;
+  border-color: var(--accent);
+}
