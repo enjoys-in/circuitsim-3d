@@ -6,7 +6,9 @@ from app.domain.engines import SimulationEngine
 from app.domain.entities.project import Circuit
 from app.engines.custom import simulatable_keys
 from app.engines.digital.elements import (
+    DIGITAL_ONLY_KEYS,
     LOGIC_KEYS,
+    POWER_RAILS,
     Clock,
     FlipFlop,
     LogicElement,
@@ -88,8 +90,15 @@ class DigitalEngine(SimulationEngine):
     name = "digital"
 
     def supports(self, circuit: Circuit) -> bool:
-        keys = simulatable_keys(circuit) - {"ground"}
-        return bool(keys) and keys <= LOGIC_KEYS
+        keys = simulatable_keys(circuit)
+        logic = keys - POWER_RAILS
+        if not logic or not (logic <= LOGIC_KEYS):
+            return False
+        # Only claim a rail-powered circuit when something is unmistakably digital, so
+        # analog parts that share a key (e.g. an LED lit off a supply) stay with analog.
+        if (keys & POWER_RAILS) and not (logic & DIGITAL_ONLY_KEYS):
+            return False
+        return True
 
     def run(self, circuit: Circuit, options: dict[str, Any]) -> dict[str, Any]:
         netlist = Netlist(circuit)

@@ -119,6 +119,21 @@ class Probe(LogicElement):
         return {"value": self.value, "on": self.value == 1}
 
 
+class Rail(LogicElement):
+    """A power rail as a constant logic level: VCC pins drive 1, ground pins drive 0."""
+
+    def __init__(self, instance: ComponentInstance, levels: dict[str, int]) -> None:
+        super().__init__(instance)
+        self._levels = levels
+
+    def drive(self, tick: int) -> Pins:
+        return dict(self._levels)
+
+    def state(self) -> dict[str, Any]:
+        high = max(self._levels.values(), default=0)
+        return {"value": high, "on": bool(high)}
+
+
 class Sequential(LogicElement):
     @property
     def combinational(self) -> bool:
@@ -512,11 +527,22 @@ _FACTORIES: dict[str, Callable[[ComponentInstance], LogicElement]] = {
     "alu8": lambda inst: Alu(inst, 8),
     "rom16": lambda inst: Rom(inst, 4, 4),
     "ram16": lambda inst: Ram(inst, 4, 4),
+    # DC rails double as constant logic levels so ICs can be tied to VCC / GND.
+    "ground": lambda inst: Rail(inst, {"gnd": 0}),
+    "dc_supply": lambda inst: Rail(inst, {"+": 1, "-": 0}),
+    "battery_lipo": lambda inst: Rail(inst, {"+": 1, "-": 0}),
     **{key: _gate_factory(key) for key in _GATES},
     **{key: _comb_factory(key) for key in _COMBINATIONAL},
 }
 
 LOGIC_KEYS = frozenset(_FACTORIES)
+
+# DC power rails usable as logic levels (VCC = 1, GND = 0).
+POWER_RAILS = frozenset({"ground", "dc_supply", "battery_lipo"})
+
+# Keys that belong unmistakably to the digital engine (not shared with analog), used
+# to decide whether a rail-powered circuit is digital or should go to the analog engine.
+DIGITAL_ONLY_KEYS = LOGIC_KEYS - POWER_RAILS - frozenset({"led"})
 
 
 def build_element(instance: ComponentInstance) -> LogicElement | None:

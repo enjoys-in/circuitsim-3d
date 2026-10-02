@@ -11,7 +11,9 @@ import { PcbToolbar, type PcbViewMode } from "./PcbToolbar";
 import "./pcb.css";
 
 // three.js is heavy; load it only when the user switches to the 3D view.
-const Pcb3DScene = lazy(() => import("./canvas/Pcb3DScene"));
+const Pcb3DScene = lazy(() =>
+  import("./canvas/Pcb3DScene").then((m) => ({ default: m.Pcb3DScene })),
+);
 
 export default function PcbView() {
   const { circuit } = useCircuitGraph();

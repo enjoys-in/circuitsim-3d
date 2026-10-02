@@ -1,10 +1,6 @@
-import { readFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-
-const { version } = JSON.parse(
-  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
-) as { version: string };
+import { version } from "./package.json";
 
 // Frontend builds into backend/dist so FastAPI serves it at "/".
 export default defineConfig({
