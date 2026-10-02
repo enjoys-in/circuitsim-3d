@@ -31,6 +31,7 @@ export function runDrc(
   board: Board,
   routedNets: Set<string>,
   netCount: number,
+  clearance: number = CLEARANCE,
 ): DrcViolation[] {
   const violations: DrcViolation[] = [];
   const segments = toSegments(traces);
@@ -51,11 +52,11 @@ export function runDrc(
           message: `Short — ${s.layer} traces on different nets overlap`,
           at,
         });
-      } else if (gap < CLEARANCE) {
+      } else if (gap < clearance) {
         violations.push({
           id: `clearance-${i}-${j}`,
           kind: "clearance",
-          message: `Traces on ${s.layer} are too close (${gap.toFixed(1)} < ${CLEARANCE} px)`,
+          message: `Traces on ${s.layer} are too close (${gap.toFixed(1)} < ${clearance} px)`,
           at,
         });
       }

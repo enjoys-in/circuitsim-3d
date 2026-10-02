@@ -1,11 +1,12 @@
 import { useCallback, useMemo } from "react";
 import type { Circuit, ComponentDef } from "../../domain";
+import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { runDrc } from "./model/drc";
 import { getFootprint } from "./model/footprints";
 import { distance, padWorld } from "./model/geometry";
 import { analyzeNets, collectPads, type Connectivity, type PadInfo } from "./model/nets";
 import type { Obstacle, Placement } from "./model/pcbTypes";
-import { otherLayer } from "./model/pcbTypes";
+import { CLEARANCE, otherLayer } from "./model/pcbTypes";
 import type { DrcViolation } from "./model/pcbTypes";
 import { usePlacements, type PlacementController } from "./usePlacements";
 import { usePcbHistory, type PcbSnapshot } from "./usePcbHistory";
@@ -19,6 +20,8 @@ export interface PcbState extends PlacementController, RoutingController {
   drc: DrcViolation[];
   netCount: number;
   obstacles: Obstacle[];
+  clearance: number;
+  setClearance: (value: number) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -26,6 +29,7 @@ export interface PcbState extends PlacementController, RoutingController {
 export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, ComponentDef>): PcbState {
   const placement = usePlacements(circuit, catalog);
   const routing = useRouting();
+  const [clearance, setClearance] = usePersistentState<number>("circuitsim.pcb.clearance", CLEARANCE);
 
   const pads = useMemo(
     () => collectPads(circuit, catalog, placement.placements),
@@ -61,8 +65,8 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
   }, [circuit, catalog, placement.placements]);
 
   const drc = useMemo(
-    () => runDrc(routing.traces, placement.board, connectivity.routedNets, netCount),
-    [routing.traces, placement.board, connectivity.routedNets, netCount],
+    () => runDrc(routing.traces, placement.board, connectivity.routedNets, netCount, clearance),
+    [routing.traces, placement.board, connectivity.routedNets, netCount, clearance],
   );
 
   // Re-anchor trace ends attached to a part's pads to where those pads land in
@@ -122,7 +126,7 @@ export function usePcbState(circuit: Circuit, catalog: ReadonlyMap<string, Compo
   );
 
   return useMemo(
-    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, undo: history.undo, redo: history.redo }),
-    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, history],
+    () => ({ ...placement, ...routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, clearance, setClearance, undo: history.undo, redo: history.redo }),
+    [placement, routing, rotateComponent, flipComponent, pads, connectivity, drc, netCount, obstacles, clearance, setClearance, history],
   );
 }

@@ -97,6 +97,15 @@ export function PcbToolbar({ mode, onMode, render, onRender }: Props) {
         onCommit={pcb.setTraceWidth}
       />
 
+      <NumberInput
+        label="Clearance"
+        suffix="px"
+        value={pcb.clearance}
+        min={1}
+        max={20}
+        onCommit={pcb.setClearance}
+      />
+
       <div className="pcb-toolbar__end">
         {pcb.routing && <span className="pcb-hint">routing — click pads/points, V = via, Esc = cancel</span>}
         {!pcb.routing && selected && <span className="pcb-hint">part selected — R rotate, F flip, drag to move</span>}
