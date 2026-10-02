@@ -5,6 +5,7 @@ import { useExampleLoader } from "../examples/useExampleLoader";
 import { ExportMenu } from "../export/ExportMenu";
 import { usePcb } from "../pcb/PcbContext";
 import { ProjectMenu } from "../projects/ProjectMenu";
+import { SnapshotsMenu } from "../snapshots/SnapshotsMenu";
 import { SimulationControls } from "../simulation/SimulationControls";
 import { useSimulation } from "../simulation/SimulationContext";
 import { SoundToggle } from "../sound/SoundToggle";
@@ -45,6 +46,7 @@ export function BoardToolbar() {
         <ZoomControl />
         <StatusBadge />
         <ProjectMenu />
+        <SnapshotsMenu />
         <ExportMenu />
         <Button
           size="sm"
