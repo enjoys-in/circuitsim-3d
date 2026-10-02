@@ -378,6 +378,7 @@
 .right-panel__body {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
 }
 
@@ -394,6 +395,7 @@
   padding: 14px;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .assistant__badge {
@@ -592,6 +594,7 @@
 .assistant__thread {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -605,6 +608,7 @@
   font-size: 13px;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   max-width: 92%;
 }
 
@@ -646,6 +650,8 @@
 }
 
 .assistant__input {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-2);
