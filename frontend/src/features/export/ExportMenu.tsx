@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "../../shared/ui/Button";
 import { Sheet } from "../../shared/ui/Sheet";
-import { useCircuitGraph } from "../board/CircuitGraphContext";
+import { useCircuitActions, useCircuitGraph } from "../board/CircuitGraphContext";
 import { useCatalog } from "../catalog/CatalogContext";
 import { usePcb } from "../pcb/PcbContext";
 import { buildShareUrl } from "../share/shareCircuit";
@@ -16,8 +16,10 @@ export function ExportMenu() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const { circuit, nodes, edges } = useCircuitGraph();
+  const { loadCircuit } = useCircuitActions();
   const { byKey } = useCatalog();
   const pcb = usePcb();
+  const fileRef = useRef<HTMLInputElement>(null);
   const rows = useMemo(() => (open ? buildBom(circuit, byKey) : []), [open, circuit, byKey]);
   const totalParts = rows.reduce((n, r) => n + r.qty, 0);
 
@@ -51,6 +53,22 @@ export function ExportMenu() {
     const { buildCentroid } = await import("./centroid");
     const csv = buildCentroid({ circuit, catalog: byKey, placements: pcb.placements, board: pcb.board });
     downloadText(`circuitsim-pick-and-place-${stamp()}.csv`, csv, "text/csv");
+  };
+  const downloadSpice = async () => {
+    const { buildSpice } = await import("./spice");
+    downloadText(`circuitsim-${stamp()}.cir`, buildSpice(circuit, byKey), "text/plain");
+  };
+  const onSpiceFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const text = await file.text();
+    const { parseSpice } = await import("./spice");
+    const imported = parseSpice(text);
+    if (imported.instances.length > 0) {
+      loadCircuit(imported);
+      setOpen(false);
+    }
   };
   const shareLink = async () => {
     const url = buildShareUrl(circuit);
@@ -105,6 +123,19 @@ export function ExportMenu() {
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadCentroid()}>
               Pick &amp; place (.csv)
             </Button>
+            <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadSpice()}>
+              SPICE (.cir)
+            </Button>
+            <Button size="sm" onClick={() => fileRef.current?.click()}>
+              Import SPICE (.cir)
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".cir,.spice,.net,.sp,.txt"
+              hidden
+              onChange={(e) => void onSpiceFile(e)}
+            />
           </div>
 
           {rows.length === 0 ? (
