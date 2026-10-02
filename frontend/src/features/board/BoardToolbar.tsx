@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, openVerify, openSweep, setMode } = useWorkspaceUi();
+  const { openCode, openVerify, openSweep, openScope, setMode } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -91,6 +91,14 @@ export function BoardToolbar() {
           title="Sweep a value and plot the meters (DC / parameter sweep)"
         >
           ≈ Sweep
+        </Button>
+        <Button
+          size="sm"
+          onClick={openScope}
+          disabled={circuit.instances.length === 0}
+          title="Oscilloscope — capture and view the voltage waveforms"
+        >
+          ∿ Scope
         </Button>
         <SoundToggle />
         <Button size="sm" onClick={clear}>
