@@ -18,39 +18,24 @@ from app.core.config import Settings, get_settings
 from app.domain.entities.project import Circuit, Position
 from app.mcp.studio import SimulationStudio
 
-# A compact pin cheat-sheet for the most-used parts so the model wires correctly.
-_COMMON = (
-    "resistor",
-    "capacitor",
-    "led",
-    "dc_supply",
-    "ground",
-    "push_button",
-    "spdt_switch",
-    "potentiometer",
-    "diode",
-    "npn_bjt",
-    "and",
-    "or",
-    "not",
-    "clock",
-    "input",
-    "output",
-    "dff",
-    "counter4",
-    "register4",
-    "alu4",
-    "esp32_devkit",
-)
-
-_FORMAT = (
-    'Respond ONLY with JSON of the form '
-    '{"reply": string, "design": {"parts": [...], "wires": [...]} | null}. '
-    'Each part is {"id": "R1", "type": "<component_key>", "params": {...}}. '
-    'Each wire is ["<id>:<pin>", "<id>:<pin>", ...] joining pins on one net. '
-    "To change the current circuit, return the COMPLETE new design (not a diff). "
-    "Use only component keys and pin names from the catalog below. Keep `reply` short "
-    "and friendly; set `design` to null when you are only explaining."
+_SCHEMA = (
+    "Respond with ONE JSON object and nothing else \u2014 no prose outside it, no markdown fences:\n"
+    "{\n"
+    '  "reply": "one or two short, friendly sentences for the user",\n'
+    '  "design": {\n'
+    '    "parts": [ { "id": "R1", "type": "<component_key>", "params": {} } ],\n'
+    '    "wires": [ ["R1:a", "V1:+"], ["R1:b", "D1:anode"] ]\n'
+    "  }\n"
+    "}\n"
+    "Rules:\n"
+    '- "type" must be a component_key listed above; every pin must be a real pin name for that part.\n'
+    '- Give every instance a unique "id"; every part must be wired to something.\n'
+    '- A wire is ONE net: an array of "<id>:<pin>" endpoints that are electrically joined.\n'
+    "- Analog circuits need a `ground` (and usually a supply such as `dc_supply`).\n"
+    "- Omit params left at their default to keep the JSON small.\n"
+    "- To change the current circuit, return the COMPLETE new design (not a diff).\n"
+    '- Set "design" to null when you are only explaining and changing nothing.\n'
+    "- Always return the ENTIRE design in one object, even when it is large \u2014 never stop early."
 )
 
 
@@ -185,6 +170,7 @@ class AssistantService:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
         self._studio = SimulationStudio()
+        self._system = self._build_system_prompt()
 
     def _active(self) -> _Provider | None:
         chosen = (self._settings.ai_provider or "auto").lower()
@@ -268,20 +254,10 @@ class AssistantService:
                 reply += "\n\n(The design was too large to finish \u2014 try a smaller change.)"
             return {"reply": reply, "configured": True}
 
-        try:
-            built = self._studio.build_circuit(design.get("parts", []), design.get("wires", []))
-        except Exception as exc:  # noqa: BLE001 - surface build errors to the user
-            return {"reply": f"{reply}\n\n(Could not build that design: {exc})", "configured": True}
-
-        self._layout(built)
-        report = self._studio.validate(built)
-        reply = self._with_result(reply, built, report)
-        return {
-            "reply": reply,
-            "circuit": built,
-            "configured": True,
-            "issues": report.get("issues", []),
-        }
+        built, reply, issues = self._assemble(provider, payload, design, reply)
+        if built is None:
+            return {"reply": reply, "configured": True}
+        return {"reply": reply, "circuit": built, "configured": True, "issues": issues}
 
     # -- internals ----------------------------------------------------------
     def _complete(
@@ -484,9 +460,14 @@ class AssistantService:
             )
             return
         raw = self._complete_if_truncated(provider, payload, raw)
-        yield _sse("done", self._finalize(raw))
+        yield _sse("done", self._finalize(raw, provider, payload))
 
-    def _finalize(self, raw: str) -> dict[str, Any]:
+    def _finalize(
+        self,
+        raw: str,
+        provider: _Provider | None = None,
+        payload: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         parsed = self._parse(raw)
         reply = str(parsed.get("reply") or "").strip() or "Done."
         design = parsed.get("design")
@@ -494,23 +475,14 @@ class AssistantService:
             if '"parts"' in raw:  # started a design but it didn't parse -> truncated
                 reply += "\n\n(The design was too large to finish \u2014 try a smaller change.)"
             return {"reply": reply, "configured": True, "circuit": None, "issues": []}
-        try:
-            built = self._studio.build_circuit(design.get("parts", []), design.get("wires", []))
-        except Exception as exc:  # noqa: BLE001 - surface build errors to the user
-            return {
-                "reply": f"{reply}\n\n(Could not build that design: {exc})",
-                "configured": True,
-                "circuit": None,
-                "issues": [],
-            }
-        self._layout(built)
-        report = self._studio.validate(built)
-        reply = self._with_result(reply, built, report)
+        built, reply, issues = self._assemble(provider, payload or [], design, reply)
+        if built is None:
+            return {"reply": reply, "configured": True, "circuit": None, "issues": []}
         return {
             "reply": reply,
             "circuit": built.model_dump(mode="json"),
             "configured": True,
-            "issues": report.get("issues", []),
+            "issues": issues,
         }
 
     def _build_messages(
@@ -531,19 +503,80 @@ class AssistantService:
         return out
 
     def _system_prompt(self) -> str:
-        valid = set(self._studio.component_keys())
-        keys = ", ".join(sorted(valid))
-        pins = {k: self._studio.get_component(k)["pins"] for k in _COMMON if k in valid}
+        return self._system
+
+    def _build_system_prompt(self) -> str:
         guide = {name: g.get("handles", "") for name, g in self._studio.engine_guide().items()}
+        pins = {k: self._studio.get_component(k)["pins"] for k in self._studio.component_keys()}
         return (
-            "You are the circuit design assistant inside CircuitSim, an electronics simulator "
-            "with analog, digital and MCU engines. Build and modify circuits for the user.\n\n"
-            f"Engines: {json.dumps(guide)}\n\n"
-            f"Valid component keys: {keys}\n\n"
-            f"Pins for common parts: {json.dumps(pins)}\n\n"
-            "Rules: give every part a unique id; connect a pin to a supply/ground as needed; "
-            "analog circuits need a `ground`. " + _FORMAT
+            "You are the circuit design assistant inside CircuitSim, an electronics simulator with "
+            "analog, digital and MCU engines. Build and modify real, simulatable circuits.\n\n"
+            f"Engines and what each handles: {json.dumps(guide)}\n\n"
+            "Every available part with its pins (component_key -> pin names), so you can wire any "
+            f"of them: {json.dumps(pins)}\n\n" + _SCHEMA
         )
+
+    def _assemble(
+        self,
+        provider: _Provider | None,
+        payload: list[dict[str, str]],
+        design: dict[str, Any],
+        reply: str,
+    ) -> tuple[Circuit | None, str, list[str]]:
+        """Build the design, then let the model fix its own wiring once if validation complains."""
+        try:
+            built = self._studio.build_circuit(design.get("parts", []), design.get("wires", []))
+        except Exception as exc:  # noqa: BLE001 - surface build errors to the user
+            return None, f"{reply}\n\n(Could not build that design: {exc})", []
+        report = self._studio.validate(built)
+        issues = report.get("issues", [])
+        if issues and provider is not None:
+            fixed = self._repair(provider, payload, design, issues)
+            if fixed is not None:
+                try:
+                    rebuilt = self._studio.build_circuit(
+                        fixed.get("parts", []), fixed.get("wires", [])
+                    )
+                except Exception:  # noqa: BLE001 - keep the original build on a bad repair
+                    rebuilt = None
+                if rebuilt is not None:
+                    rereport = self._studio.validate(rebuilt)
+                    if len(rereport.get("issues", [])) < len(issues):
+                        built, report, issues = rebuilt, rereport, rereport.get("issues", [])
+        self._layout(built)
+        reply = self._with_result(reply, built, report)
+        return built, reply, issues
+
+    def _repair(
+        self,
+        provider: _Provider,
+        payload: list[dict[str, str]],
+        design: dict[str, Any],
+        issues: list[str],
+    ) -> dict[str, Any] | None:
+        messages = [
+            *payload,
+            {"role": "assistant", "content": json.dumps({"design": design})},
+            {
+                "role": "user",
+                "content": (
+                    "The design has these problems:\n- "
+                    + "\n- ".join(issues[:8])
+                    + "\n\nReturn the COMPLETE corrected design (same JSON schema) that fixes them, "
+                    "using only valid pin names for each part."
+                ),
+            },
+        ]
+        try:
+            content = self._complete(provider, messages)
+        except httpx.HTTPError:
+            return None
+        parsed = self._parse(content)
+        fixed = parsed.get("design")
+        if not isinstance(fixed, dict):
+            fixed = parsed if "parts" in parsed else None
+        return fixed if isinstance(fixed, dict) else None
+
 
     @staticmethod
     def _parse(content: str) -> dict[str, Any]:
