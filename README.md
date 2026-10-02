@@ -26,13 +26,13 @@ It grew into a full playground.
 
 ## Screenshots
 
-| Workspace | Digital ALU | Waveforms |
-|-----------|-------------|-----------|
-| ![Workspace](docs/screenshots/01-workspace.png) | ![Digital ALU](docs/screenshots/02-digital-alu.png) | ![Waveforms](docs/screenshots/03-waveforms.png) |
+| Workspace | 4-bit CPU | Logic analyzer |
+|-----------|-----------|----------------|
+| ![Workspace](docs/screenshots/01-workspace.png) | ![4-bit CPU](docs/screenshots/02-digital-alu.png) | ![Logic analyzer](docs/screenshots/03-waveforms.png) |
 
-| ESP32 firmware | PCB editor |
-|----------------|------------|
-| ![ESP32 firmware](docs/screenshots/04-esp32-firmware.png) | ![PCB editor](docs/screenshots/05-pcb.png) |
+| ESP32 firmware | Routed PCB | AI assistant |
+|----------------|------------|--------------|
+| ![ESP32 firmware](docs/screenshots/04-esp32-firmware.png) | ![Routed PCB](docs/screenshots/05-pcb.png) | ![AI assistant](docs/screenshots/06-ai-assistant.png) |
 
 ---
 
