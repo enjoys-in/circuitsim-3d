@@ -378,6 +378,7 @@ LOGIC = [
         ),
         subcategory="memory",
         description="Async read; writes D0-D3 to the address on the clock edge when WE is high",
+        default_params={"data": []},
         tags=["digital", "cpu"],
     ),
 ]

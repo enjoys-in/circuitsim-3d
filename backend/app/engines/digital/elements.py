@@ -397,6 +397,14 @@ class Ram(Sequential):
         self.inputs = (*self._addr, *self._din, "we", "clk")
         self.outputs = tuple(f"q{i}" for i in range(data))
         self._mem = [0] * (1 << addr)
+        contents = instance.params.get("data", [])
+        if isinstance(contents, list):
+            mask = (1 << data) - 1
+            for i, x in enumerate(contents[: 1 << addr]):
+                try:
+                    self._mem[i] = int(x) & mask
+                except (TypeError, ValueError):
+                    self._mem[i] = 0
         self._last_clk: Signal = None
         self._last: Pins = {}
 

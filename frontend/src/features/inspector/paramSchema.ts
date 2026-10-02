@@ -91,6 +91,9 @@ export function describeParams(def: ComponentDef, params: Params): ParamDescript
   const keys = [...new Set([...Object.keys(def.default_params), ...Object.keys(params)])].filter(
     (key) => !HIDDEN.has(key) && !key.endsWith("_end"),
   );
+  // Memory parts (ROM/RAM) always expose their `data` editor, even before any value
+  // is set — so a freshly placed RAM can be preloaded from the inspector.
+  if (memoryMeta(def) && !keys.includes("data")) keys.push("data");
   const base = keys.map<ParamDescriptor>((key) => {
     const kind = kindOf(def, key);
     return {
