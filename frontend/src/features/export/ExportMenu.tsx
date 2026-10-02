@@ -3,6 +3,7 @@ import { Button } from "../../shared/ui/Button";
 import { Sheet } from "../../shared/ui/Sheet";
 import { useCircuitGraph } from "../board/CircuitGraphContext";
 import { useCatalog } from "../catalog/CatalogContext";
+import { usePcb } from "../pcb/PcbContext";
 import { buildShareUrl } from "../share/shareCircuit";
 import { bomToCsv, buildBom, buildNetlist, downloadBlob, downloadText } from "./exporters";
 import "./export.css";
@@ -16,6 +17,7 @@ export function ExportMenu() {
   const [copied, setCopied] = useState(false);
   const { circuit, nodes, edges } = useCircuitGraph();
   const { byKey } = useCatalog();
+  const pcb = usePcb();
   const rows = useMemo(() => (open ? buildBom(circuit, byKey) : []), [open, circuit, byKey]);
   const totalParts = rows.reduce((n, r) => n + r.qty, 0);
 
@@ -31,6 +33,19 @@ export function ExportMenu() {
     const { buildSchematicSvg } = await import("./schematicSvg");
     const { svgToPngBlob } = await import("./toPng");
     downloadBlob(`circuitsim-schematic-${stamp()}.png`, await svgToPngBlob(buildSchematicSvg(nodes, edges)));
+  };
+  const downloadGerbers = async () => {
+    const { buildGerbers } = await import("./gerber");
+    const { zipFiles } = await import("./zip");
+    const files = buildGerbers({
+      circuit,
+      catalog: byKey,
+      placements: pcb.placements,
+      board: pcb.board,
+      traces: pcb.traces,
+      vias: pcb.vias,
+    });
+    downloadBlob(`circuitsim-gerbers-${stamp()}.zip`, zipFiles(files));
   };
   const shareLink = async () => {
     const url = buildShareUrl(circuit);
@@ -78,6 +93,9 @@ export function ExportMenu() {
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={downloadJson}>
               Circuit (.json)
+            </Button>
+            <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadGerbers()}>
+              Gerbers (.zip)
             </Button>
           </div>
 
