@@ -175,4 +175,30 @@ export const COMPUTING_EXAMPLES: Example[] = [
     ),
     options: { ticks: 28 },
   },
+  {
+    id: "computer-cpu",
+    title: "Computer (CPU block)",
+    category: "Digital",
+    description:
+      "A whole computer in one block. The CPU runs its stored program \u2014 edit it in the " +
+      "Inspector (one byte per step: high nibble = opcode, low nibble = operand; ops 0 ADD, 1 SUB, " +
+      "2 AND, 3 OR, 4 XOR, 5 LOAD, 6 SHL, 7 HALT). Default: LOAD 3, ADD 5, SUB 2, SHL, AND 9, OR 1, " +
+      "HALT \u2192 9. Watch the accumulator (q) and program counter (pc).",
+    circuit: build(
+      [
+        ["CLK", "clock", 0, 120, { period: 2 }],
+        ["RST", "input", 0, 240, { value: 0 }],
+        ["CPU", "cpu", 240, 20],
+        ...probes("ACC", 540, 0),
+        ...probes("PC", 690, 0),
+      ],
+      [
+        ["CLK:out", "CPU:clk"],
+        ["RST:out", "CPU:reset"],
+        ...probeWires("CPU", "q", "ACC"),
+        ...probeWires("CPU", "pc", "PC"),
+      ],
+    ),
+    options: { ticks: 28 },
+  },
 ];

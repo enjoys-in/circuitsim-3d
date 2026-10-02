@@ -74,8 +74,10 @@ const COLOR_OPTIONS = Object.keys(LED_COLORS).map((c) => ({ value: c, label: c }
 function memoryMeta(def: ComponentDef): { words: number; bits: number } | undefined {
   const addr = def.pins.filter((p) => /^a\d+$/.test(p.name)).length;
   const bits = def.pins.filter((p) => /^d\d+$/.test(p.name)).length;
-  if (addr === 0 || bits === 0) return undefined;
-  return { words: 1 << addr, bits };
+  if (addr && bits) return { words: 1 << addr, bits };
+  // The CPU block stores its program as 16 instruction bytes (opcode nibble + operand nibble).
+  if (def.key === "cpu") return { words: 16, bits: 8 };
+  return undefined;
 }
 
 function kindOf(def: ComponentDef, key: string): ParamKind {

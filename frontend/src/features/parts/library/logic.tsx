@@ -42,6 +42,7 @@ const SYMBOL: Record<string, string> = {
   alu8: "ALU8",
   rom16: "ROM",
   ram16: "RAM",
+  cpu: "CPU",
 };
 
 function sides(def: ComponentDef) {
