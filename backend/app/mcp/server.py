@@ -48,6 +48,10 @@ Circuit shape:
 Engines: analog (DC/transient), digital (logic), mcu (firmware + sensors).
 Leave `engine` empty to auto-select. Analog and MCU circuits need a ground/return.
 All tools are read-only and deterministic — safe to call anytime.
+
+Beyond a single run: run_simulation with options {"analysis":"tran"} returns scope
+waveforms; verify_circuit checks a truth table of input vectors; sweep_parameter
+plots a meter against a swept component value.
 """.strip()
 
 # Everything here is side-effect free and deterministic.
@@ -289,6 +293,84 @@ def run_circuit_json(
         return {"error": str(exc)}
     except ValueError as exc:
         return {"error": f"invalid circuit: {exc}"}
+
+
+@server.tool(
+    title="Verify circuit (truth table)",
+    description=(
+        "Run a circuit once per input `vector` and compare probe outputs to expectations — "
+        "a truth-table / regression check. Each vector sets `input` parts (and may list "
+        "`expected` output bits); outputs are read from `output`/`led` probes. Returns per-row "
+        "inputs/outputs/pass plus a passed/failed/total tally. For sequential designs (clocks, "
+        "counters, CPUs) pass options {\"ticks\": n} to settle before reading."
+    ),
+    annotations=READ_ONLY,
+)
+def verify_circuit(
+    parts: PartsParam,
+    wires: WiresParam,
+    vectors: Annotated[
+        list[dict[str, Any]],
+        Field(
+            description=(
+                "Test vectors. Each item: {\"inputs\": {\"<input id>\": 0|1, ...}, optional "
+                "\"expected\": {\"<output id>\": 0|1, ...}}. Omit `expected` to just observe "
+                "outputs."
+            ),
+            examples=[[{"inputs": {"A": 1, "B": 0}, "expected": {"Y": 0}}]],
+        ),
+    ],
+    engine: EngineParam = None,
+    options: OptionsParam = None,
+) -> dict[str, Any]:
+    try:
+        return studio.verify(parts, wires, vectors, engine=engine, options=options)
+    except DomainError as exc:
+        return {"error": str(exc)}
+
+
+@server.tool(
+    title="Sweep a parameter",
+    description=(
+        "Sweep one instance parameter across a range and collect meter readings at each point "
+        "(a DC transfer curve). Returns `x` (the swept values), `x_label`/`x_unit`, and one "
+        "`series` per meter-like part (voltmeter->voltage, ammeter/led->current, output->value). "
+        "Add a voltmeter/ammeter where you want to measure."
+    ),
+    annotations=READ_ONLY,
+)
+def sweep_parameter(
+    parts: PartsParam,
+    wires: WiresParam,
+    instance: Annotated[
+        str,
+        Field(description="Id of the instance whose parameter is swept, e.g. 'V1' or 'R1'."),
+    ],
+    param: Annotated[
+        str,
+        Field(description="Parameter name to sweep, e.g. 'voltage' or 'resistance'."),
+    ],
+    start: Annotated[float, Field(description="First value of the sweep range.")],
+    stop: Annotated[float, Field(description="Last value of the sweep range.")],
+    steps: Annotated[
+        int,
+        Field(default=20, ge=2, le=200, description="Number of points to sample (2..200)."),
+    ] = 20,
+    options: OptionsParam = None,
+) -> dict[str, Any]:
+    try:
+        return studio.sweep(
+            parts,
+            wires,
+            instance=instance,
+            param=param,
+            start=start,
+            stop=stop,
+            steps=steps,
+            options=options,
+        )
+    except DomainError as exc:
+        return {"error": str(exc)}
 
 
 # --------------------------------------------------------------------------- #

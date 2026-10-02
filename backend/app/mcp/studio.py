@@ -241,6 +241,43 @@ class SimulationStudio:
         circuit = self.build_circuit(parts, wires)
         return self.run(circuit, engine=engine, options=options)
 
+    def verify(
+        self,
+        parts: list[dict[str, Any]],
+        wires: list[Any],
+        vectors: list[dict[str, Any]],
+        *,
+        engine: str | None = None,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build a circuit, then run each input vector and compare probe outputs."""
+        circuit = self.build_circuit(parts, wires)
+        return self._sim.verify(circuit, vectors, engine=engine, options=options)
+
+    def sweep(
+        self,
+        parts: list[dict[str, Any]],
+        wires: list[Any],
+        *,
+        instance: str,
+        param: str,
+        start: float,
+        stop: float,
+        steps: int = 20,
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build a circuit, then sweep one instance parameter collecting meter readings."""
+        circuit = self.build_circuit(parts, wires)
+        return self._sim.sweep(
+            circuit,
+            instance=instance,
+            param=param,
+            start=start,
+            stop=stop,
+            steps=steps,
+            options=options,
+        )
+
     def summarize(self, outcome: dict[str, Any]) -> dict[str, Any]:
         """Condense a raw engine result into a quick, readable digest."""
         results = outcome.get("results", outcome)

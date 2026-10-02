@@ -20,6 +20,7 @@ USAGE_GUIDE: dict[str, Any] = {
         "2. ASSEMBLE  - build `parts` and `wires`; add a ground/return for analog & mcu.",
         "3. VALIDATE  - validate_circuit to catch wiring mistakes and see the chosen engine.",
         "4. RUN       - run_simulation to get nets, instance states, waveforms, logs, warnings.",
+        "   (also: verify_circuit for truth tables, sweep_parameter for transfer curves.)",
     ],
     "circuit_format": {
         "parts": (
@@ -81,6 +82,20 @@ USAGE_GUIDE: dict[str, Any] = {
             "read(sensor, field), print, HIGH, LOW."
         ),
     ],
+    "analysis_tools": {
+        "oscilloscope_transient": (
+            "run_simulation with options {\"analysis\": \"tran\", \"t_stop\": s, \"steps\": n} "
+            "returns a `series` waveform per node voltage — the data behind the UI scope."
+        ),
+        "verify_circuit": (
+            "Truth-table / regression check: pass `vectors` of {inputs, expected?} and get a "
+            "per-row pass/fail tally. Use options {\"ticks\": n} for sequential (clocked) designs."
+        ),
+        "sweep_parameter": (
+            "DC transfer curve: sweep one instance `param` from `start` to `stop` in `steps` and "
+            "read meters (voltmeter/ammeter/led/output) at each point. Add a meter to measure."
+        ),
+    },
     "common_errors": {
         "unknown component '<x>'": "The `type` is not a catalog key. Call list_components.",
         "has no pin '<p>'": "Wrong pin name. Call get_component to list valid pins.",
