@@ -26,7 +26,7 @@ export function circuitToGraph(
   });
 
   const edges = circuit.nets.flatMap((net, index) => {
-    if (net.id.startsWith("bb:")) return [];
+    if (net.id.startsWith("bb:") || net.id.startsWith("nl:")) return [];
     const [first, ...rest] = net.endpoints.map((point) => point.split(":") as [string, string]);
     if (!first) return [];
     const [source, sourceHandle] = first;

@@ -32,7 +32,27 @@ export class CircuitBuilder {
   }
 
   build(): Circuit {
-    return { instances: this.instances, nets: [...this.nets, ...this.breadboardNets()] };
+    return { instances: this.instances, nets: [...this.nets, ...this.breadboardNets(), ...this.netLabelNets()] };
+  }
+
+  // net_label parts that share a name are the same electrical node — emit a synthetic
+  // net joining their pins so wires to the same label are connected without drawing them.
+  private netLabelNets(): Circuit["nets"] {
+    const byName = new Map<string, string[]>();
+    for (const inst of this.instances) {
+      if (inst.component_key !== "net_label") continue;
+      const name = String(inst.params?.name ?? "").trim();
+      if (!name) continue;
+      const list = byName.get(name) ?? [];
+      list.push(`${inst.id}:pin`);
+      byName.set(name, list);
+    }
+    const nets: Circuit["nets"] = [];
+    for (const [name, endpoints] of byName) {
+      if (endpoints.length < 2) continue;
+      nets.push({ id: `nl:${name}`, name, endpoints });
+    }
+    return nets;
   }
 
   // Columns of 5 holes and the power rails are internally common; emit those as

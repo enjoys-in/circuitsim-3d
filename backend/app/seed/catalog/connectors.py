@@ -6,6 +6,16 @@ from app.seed.catalog.builder import Entry, P, component, pins
 # Connectivity-only parts: pins are wired by the user; no internal device behaviour.
 CONNECTORS: list[Entry] = [
     component(
+        "net_label",
+        "Net Label",
+        ComponentCategory.CONNECTOR,
+        pins(("pin", P.PASSIVE)),
+        subcategory="label",
+        description="Name a net; wires to labels sharing a name are the same node",
+        default_params={"name": "VCC"},
+        tags=["label", "net", "bus"],
+    ),
+    component(
         "header_male_1x2",
         "Male Header 1x2",
         ComponentCategory.CONNECTOR,

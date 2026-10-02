@@ -6,11 +6,15 @@ from app.domain.entities.project import Circuit
 # add pins/connectivity — so engine selection must ignore them.
 CUSTOM_PREFIX = "custom_"
 
+# Connectivity-only built-ins (e.g. net labels) likewise carry no device model.
+CONNECTIVITY_ONLY = frozenset({"net_label"})
+
 
 def simulatable_keys(circuit: Circuit) -> set[str]:
-    """Component keys that carry a device, excluding user 'custom_*' parts."""
+    """Component keys that carry a device, excluding user 'custom_*' and label parts."""
     return {
         inst.component_key
         for inst in circuit.instances
         if not inst.component_key.startswith(CUSTOM_PREFIX)
+        and inst.component_key not in CONNECTIVITY_ONLY
     }

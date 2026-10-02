@@ -3,7 +3,7 @@ import { pinRow } from "../layout";
 import { paint } from "../paint";
 import { HeaderPin } from "../primitives/HeaderPin";
 import { Silk } from "../primitives/Silk";
-import type { PartFactory, PartPin } from "../types";
+import type { PartArtProps, PartFactory, PartPin, PartSpec } from "../types";
 
 const PITCH = 16;
 
@@ -110,6 +110,7 @@ function usbFactory(kind: UsbKind): PartFactory {
 }
 
 export const connectorParts: Record<string, PartFactory> = {
+  net_label: () => netLabel(),
   header_male_1x2: (def) => maleHeader(def),
   header_male_1x4: (def) => maleHeader(def),
   header_female_1x4: (def) => femaleHeader(def),
@@ -117,3 +118,27 @@ export const connectorParts: Record<string, PartFactory> = {
   usb_b: usbFactory("B"),
   usb_c: usbFactory("C"),
 };
+
+function netLabel(): PartSpec {
+  const width = 96;
+  const height = 28;
+  const pins: PartPin[] = [{ name: "pin", x: 6, y: height / 2, side: "left" }];
+  function Art({ params }: PartArtProps) {
+    const name = String(params.name ?? "").trim() || "NET";
+    return (
+      <g>
+        <path
+          d={`M6,${height / 2} L20,6 L${width - 6},6 L${width - 6},${height - 6} L20,${height - 6} Z`}
+          fill="#0f2238"
+          stroke="#38bdf8"
+          strokeWidth={1.4}
+        />
+        <Silk x={(20 + width - 6) / 2} y={height / 2 + 3} size={9} anchor="middle">
+          {name}
+        </Silk>
+        <circle cx={6} cy={height / 2} r={3} fill="#38bdf8" />
+      </g>
+    );
+  }
+  return { width, height, pins, Art };
+}
