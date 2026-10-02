@@ -2,12 +2,23 @@ import { memo, useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as 
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useReactFlow, type EdgeProps } from "@xyflow/react";
 import { formatSI } from "../../../shared/lib/format";
 import type { Position } from "../../../domain";
-import { useLiveNet } from "../../simulation/SimulationContext";
+import { useLiveNet, useLiveState } from "../../simulation/SimulationContext";
 import { useCircuitActions } from "../CircuitGraphContext";
 import type { WireEdgeType } from "../nodes/types";
 
 const DIGITAL_ENGINES = new Set(["digital"]);
 const ENERGIZED_VOLTS = 0.5;
+
+// Map a branch current to a flow-dot speed (faster for more current) and colour
+// (cyan at low current, through amber, to red at high current).
+function flowDuration(amps: number): number {
+  const s = Math.min(Math.abs(amps) / 0.02, 4);
+  return Math.max(0.25, 1.2 / (0.3 + s));
+}
+function flowColor(amps: number): string {
+  const s = Math.min(Math.abs(amps) / 0.02, 4) / 4;
+  return `hsl(${Math.round(190 - 170 * s)}, 90%, 62%)`;
+}
 
 function describe(engine: string | null, value: number | null | undefined): { active: boolean; text: string | null } {
   if (value === undefined || value === null || engine === null) return { active: false, text: null };
@@ -46,6 +57,8 @@ function distToSegment(p: Position, a: Position, b: Position): number {
 
 function WireEdgeImpl({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -60,6 +73,11 @@ function WireEdgeImpl({
   const dragIndex = useRef<number | null>(null);
   const waypoints = data?.waypoints ?? [];
   const { engine, value } = useLiveNet(id);
+  const { instances } = useLiveState();
+  const branchCurrent = Math.max(
+    Math.abs(instances[source]?.current ?? 0),
+    Math.abs(instances[target]?.current ?? 0),
+  );
   const { active, text } = describe(engine, value);
   const color = data?.color ?? "#22c55e";
 
@@ -127,6 +145,13 @@ function WireEdgeImpl({
       <BaseEdge id={id} path={path} interactionWidth={18} style={{ stroke: color }} className="wire__body" />
       <path d={path} className="wire__shine" />
       {active && <path d={path} className="wire__flow" />}
+      {branchCurrent > 0 && (
+        <path
+          d={path}
+          className="wire__current"
+          style={{ stroke: flowColor(branchCurrent), animationDuration: `${flowDuration(branchCurrent)}s` }}
+        />
+      )}
       {selected && <path d={path} className="wire__selected" />}
       {waypoints.map((w, i) => (
         <circle

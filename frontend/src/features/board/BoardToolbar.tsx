@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, openVerify, openSweep, openScope, setMode } = useWorkspaceUi();
+  const { openCode, openVerify, openSweep, openScope, setMode, flowAnim, toggleFlow } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -99,6 +99,14 @@ export function BoardToolbar() {
           title="Oscilloscope — capture and view the voltage waveforms"
         >
           ∿ Scope
+        </Button>
+        <Button
+          size="sm"
+          variant={flowAnim ? "primary" : "ghost"}
+          onClick={toggleFlow}
+          title="Animate current flow along wires (speed & colour scale with current)"
+        >
+          ⚡ Flow
         </Button>
         <SoundToggle />
         <Button size="sm" onClick={clear}>

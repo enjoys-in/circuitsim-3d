@@ -212,6 +212,22 @@
   animation: wire-flow 0.8s linear infinite;
 }
 
+/* Opt-in current-flow layer: moving dots whose speed & colour scale with the branch
+   current. Hidden unless the canvas has .flow-anim (toolbar ⚡ Flow toggle). */
+.wire__current {
+  fill: none;
+  stroke-width: 3;
+  stroke-dasharray: 3 11;
+  stroke-linecap: round;
+  pointer-events: none;
+  opacity: 0;
+  animation: wire-flow 1s linear infinite;
+}
+
+.flow-anim .wire__current {
+  opacity: 0.95;
+}
+
 .wire__selected {
   fill: none;
   stroke: #fbbf24;

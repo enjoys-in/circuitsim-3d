@@ -36,6 +36,8 @@ interface WorkspaceUiValue {
   clearAssistantAction: () => void;
   panelCollapsed: boolean;
   togglePanel: () => void;
+  flowAnim: boolean;
+  toggleFlow: () => void;
 }
 
 const WorkspaceUiContext = createContext<WorkspaceUiValue | null>(null);
@@ -51,6 +53,7 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [assistantAction, setAssistantAction] = useState<AssistantAction | null>(null);
   const actionSeq = useRef(0);
   const [panelCollapsed, setPanelCollapsed] = usePersistentState<boolean>("circuitsim.panelCollapsed", false);
+  const [flowAnim, setFlowAnim] = usePersistentState<boolean>("circuitsim.flowAnim", false);
   const value = useMemo<WorkspaceUiValue>(
     () => ({
       mode,
@@ -82,8 +85,10 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       clearAssistantAction: () => setAssistantAction(null),
       panelCollapsed,
       togglePanel: () => setPanelCollapsed((v) => !v),
+      flowAnim,
+      toggleFlow: () => setFlowAnim((v) => !v),
     }),
-    [mode, codeOpen, examplesOpen, verifyOpen, sweepOpen, scopeOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed],
+    [mode, codeOpen, examplesOpen, verifyOpen, sweepOpen, scopeOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed, flowAnim, setFlowAnim],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }
