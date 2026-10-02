@@ -69,6 +69,12 @@
   font-size: 13px;
 }
 
+.overview__ai {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .notice {
   display: flex;
   gap: 8px;

@@ -1,12 +1,9 @@
-import { useState } from "react";
 import { Tabs, type TabItem } from "../../shared/ui/Tabs";
-import { useWorkspaceUi } from "../workspace/WorkspaceUiContext";
+import { useWorkspaceUi, type PanelTab } from "../workspace/WorkspaceUiContext";
 import { AssistantPanel } from "../assistant/AssistantPanel";
 import { PcbInspector } from "../pcb/PcbInspector";
 import Inspector from "./Inspector";
 import "./inspector.css";
-
-type PanelTab = "inspect" | "assistant";
 
 const TABS: TabItem<PanelTab>[] = [
   { key: "inspect", label: "Inspector" },
@@ -14,14 +11,13 @@ const TABS: TabItem<PanelTab>[] = [
 ];
 
 export default function RightPanel() {
-  const [tab, setTab] = useState<PanelTab>("inspect");
-  const { togglePanel, mode } = useWorkspaceUi();
+  const { togglePanel, mode, panelTab, setPanelTab } = useWorkspaceUi();
   return (
     <div className="right-panel">
       <Tabs
         items={TABS}
-        active={tab}
-        onChange={setTab}
+        active={panelTab}
+        onChange={setPanelTab}
         trailing={
           <button
             type="button"
@@ -35,7 +31,7 @@ export default function RightPanel() {
         }
       />
       <div className="right-panel__body">
-        {tab === "assistant" ? <AssistantPanel /> : mode === "pcb" ? <PcbInspector /> : <Inspector />}
+        {panelTab === "assistant" ? <AssistantPanel /> : mode === "pcb" ? <PcbInspector /> : <Inspector />}
       </div>
     </div>
   );

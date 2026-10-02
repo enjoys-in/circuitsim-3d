@@ -1,6 +1,15 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import type { WorkspaceMode } from "./useWorkspaceMode";
+
+export type PanelTab = "inspect" | "assistant";
+export type AssistantActionKind = "explain" | "fix";
+
+export interface AssistantAction {
+  id: number;
+  kind: AssistantActionKind;
+  warnings?: string[];
+}
 
 interface WorkspaceUiValue {
   mode: WorkspaceMode;
@@ -14,6 +23,11 @@ interface WorkspaceUiValue {
   verifyOpen: boolean;
   openVerify: () => void;
   closeVerify: () => void;
+  panelTab: PanelTab;
+  setPanelTab: (tab: PanelTab) => void;
+  assistantAction: AssistantAction | null;
+  runAssistant: (kind: AssistantActionKind, warnings?: string[]) => void;
+  clearAssistantAction: () => void;
   panelCollapsed: boolean;
   togglePanel: () => void;
 }
@@ -25,6 +39,9 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
   const [codeOpen, setCodeOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>("inspect");
+  const [assistantAction, setAssistantAction] = useState<AssistantAction | null>(null);
+  const actionSeq = useRef(0);
   const [panelCollapsed, setPanelCollapsed] = usePersistentState<boolean>("circuitsim.panelCollapsed", false);
   const value = useMemo<WorkspaceUiValue>(
     () => ({
@@ -39,10 +56,20 @@ export function WorkspaceUiProvider({ children }: { children: ReactNode }) {
       verifyOpen,
       openVerify: () => setVerifyOpen(true),
       closeVerify: () => setVerifyOpen(false),
+      panelTab,
+      setPanelTab,
+      assistantAction,
+      runAssistant: (kind, warnings) => {
+        actionSeq.current += 1;
+        setAssistantAction({ id: actionSeq.current, kind, warnings });
+        setPanelTab("assistant");
+        setPanelCollapsed(false);
+      },
+      clearAssistantAction: () => setAssistantAction(null),
       panelCollapsed,
       togglePanel: () => setPanelCollapsed((v) => !v),
     }),
-    [mode, codeOpen, examplesOpen, verifyOpen, panelCollapsed, setPanelCollapsed],
+    [mode, codeOpen, examplesOpen, verifyOpen, panelTab, assistantAction, panelCollapsed, setPanelCollapsed],
   );
   return <WorkspaceUiContext.Provider value={value}>{children}</WorkspaceUiContext.Provider>;
 }

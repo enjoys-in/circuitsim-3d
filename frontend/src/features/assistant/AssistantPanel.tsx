@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import type { SimulationOutput } from "../../domain";
 import { Button } from "../../shared/ui/Button";
 import { usePersistentState } from "../../shared/hooks/usePersistentState";
 import { assistantService, errorMessage } from "../../services";
 import type { ChatMessage, ProviderOption } from "../../services/assistant.service";
 import { useCircuitActions, useCircuitGraph } from "../board/CircuitGraphContext";
+import { useSimulation } from "../simulation/SimulationContext";
+import { useWorkspaceUi } from "../workspace/WorkspaceUiContext";
 
 const IDEAS = [
   "Build a 10V voltage divider with 6.8k and 3.3k",
@@ -11,6 +14,16 @@ const IDEAS = [
   "Make a 4-bit counter driven by a clock",
   "Add a push button that switches the LED",
 ];
+
+// One-line sim recap fed to the model so "explain" can talk about the real readings.
+function circuitSummary(result: SimulationOutput | null): string {
+  if (!result) return "";
+  const parts = [`engine=${result.engine}`];
+  const measures = result.summary.slice(0, 6).map((s) => `${s.label}=${s.value}${s.unit ?? ""}`);
+  if (measures.length) parts.push(`readings: ${measures.join(", ")}`);
+  if (result.warnings.length) parts.push(`warnings: ${result.warnings.join("; ")}`);
+  return parts.join(" | ");
+}
 
 interface Selection {
   provider: string;
@@ -20,6 +33,8 @@ interface Selection {
 export function AssistantPanel() {
   const { circuit } = useCircuitGraph();
   const { loadCircuit } = useCircuitActions();
+  const { result } = useSimulation();
+  const { assistantAction, clearAssistantAction } = useWorkspaceUi();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,17 +68,21 @@ export function AssistantPanel() {
   }, [messages, busy]);
 
   const activeProvider = providers.find((p) => p.name === sel.provider);
+  const warnings = result?.warnings ?? [];
   const chooseProvider = (name: string) => {
     const picked = providers.find((p) => p.name === name);
     setSel({ provider: name, model: picked?.default_model ?? "" });
   };
 
-  const send = async (text: string) => {
-    const content = text.trim();
+  const send = async (displayText: string, promptText?: string) => {
+    const content = displayText.trim();
     if (!content || busy) return;
-    const next: ChatMessage[] = [...messages, { role: "user", content }];
+    const shown: ChatMessage[] = [...messages, { role: "user", content }];
     // Append an empty assistant bubble to type the streamed reply into.
-    setMessages([...next, { role: "assistant", content: "" }]);
+    setMessages([...shown, { role: "assistant", content: "" }]);
+    // The model receives promptText (the engineered explain/fix instruction) when given,
+    // while the thread shows the friendly displayText.
+    const sent: ChatMessage[] = [...messages, { role: "user", content: promptText ?? content }];
     setInput("");
     setBusy(true);
     const appendToLast = (fn: (prev: string) => string) =>
@@ -75,7 +94,7 @@ export function AssistantPanel() {
       });
     try {
       await assistantService.chatStream(
-        next,
+        sent,
         circuit,
         { provider: sel.provider || null, model: sel.model || null },
         {
@@ -94,6 +113,39 @@ export function AssistantPanel() {
     }
   };
 
+  const explain = () => {
+    const summary = circuitSummary(result);
+    const prompt =
+      "Explain this circuit in clear, plain language for someone learning electronics: what it " +
+      "does overall, how the main parts work together, and what the key readings mean. Keep it to " +
+      'a few short sentences. Do NOT change the circuit \u2014 set "design" to null.' +
+      (summary ? `\n\nLatest simulation \u2014 ${summary}` : "");
+    void send("Explain my circuit", prompt);
+  };
+
+  const fix = (warns: string[]) => {
+    const list = warns.length ? warns : warnings;
+    if (!list.length) return;
+    const prompt =
+      "The simulation reported these problems:\n- " +
+      list.join("\n- ") +
+      "\n\nFix the circuit so these go away \u2014 e.g. add a series resistor, change a component " +
+      "value, or add a missing ground/supply. Return the COMPLETE corrected design and briefly " +
+      "say what you changed.";
+    void send(`Fix ${list.length} warning${list.length === 1 ? "" : "s"}`, prompt);
+  };
+
+  // Run an Explain/Fix request triggered from the results overview (once per action id).
+  const handledAction = useRef(0);
+  useEffect(() => {
+    if (!assistantAction || assistantAction.id === handledAction.current) return;
+    handledAction.current = assistantAction.id;
+    if (assistantAction.kind === "explain") explain();
+    else fix(assistantAction.warnings ?? []);
+    clearAssistantAction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assistantAction]);
+
   return (
     <div className="assistant">
       {configured === false && (
@@ -103,6 +155,24 @@ export function AssistantPanel() {
       )}
       {configured && providers.length > 0 && (
         <div className="assistant__badge assistant__badge--ok">AI ready — {sel.provider} · {sel.model}</div>
+      )}
+
+      {configured !== false && circuit.instances.length > 0 && (
+        <div className="assistant__actions">
+          <button type="button" className="assistant__action" onClick={explain} disabled={busy}>
+            ✦ Explain my circuit
+          </button>
+          {warnings.length > 0 && (
+            <button
+              type="button"
+              className="assistant__action assistant__action--fix"
+              onClick={() => fix(warnings)}
+              disabled={busy}
+            >
+              Fix {warnings.length} warning{warnings.length === 1 ? "" : "s"}
+            </button>
+          )}
+        </div>
       )}
 
       {configured && providers.length > 0 && (

@@ -410,6 +410,37 @@
   background: linear-gradient(90deg, #059669, #0891b2);
 }
 
+.assistant__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.assistant__action {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.assistant__action:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.assistant__action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.assistant__action--fix {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
 .assistant__models {
   display: flex;
   gap: 8px;

@@ -1,6 +1,8 @@
 import type { SimulationOutput } from "../../domain";
 import { formatValue } from "../../shared/lib/format";
+import { Button } from "../../shared/ui/Button";
 import { EmptyState } from "../../shared/ui/EmptyState";
+import { useWorkspaceUi } from "../workspace/WorkspaceUiContext";
 
 interface Props {
   result: SimulationOutput | null;
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export function OverviewPanel({ result, error }: Props) {
+  const { runAssistant } = useWorkspaceUi();
   if (error) {
     return (
       <div className="overview">
@@ -33,6 +36,16 @@ export function OverviewPanel({ result, error }: Props) {
       {result.summary.length === 0 && result.warnings.length === 0 && (
         <p className="overview__muted">Circuit solved with no warnings.</p>
       )}
+      <div className="overview__ai">
+        <Button size="sm" onClick={() => runAssistant("explain")}>
+          ✦ Explain circuit
+        </Button>
+        {result.warnings.length > 0 && (
+          <Button size="sm" variant="primary" onClick={() => runAssistant("fix", result.warnings)}>
+            Fix {result.warnings.length} with AI
+          </Button>
+        )}
+      </div>
       <div className="stat-grid">
         {result.summary.map((item) => (
           <div key={item.label} className="stat">
