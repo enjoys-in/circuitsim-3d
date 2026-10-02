@@ -30,7 +30,7 @@ export function BoardToolbar() {
   const loadExample = useExampleLoader();
   const { clear } = useCircuitActions();
   const { circuit } = useCircuitGraph();
-  const { openCode, openVerify, openSweep, openScope, setMode, flowAnim, toggleFlow } = useWorkspaceUi();
+  const { openCode, openVerify, openSweep, openScope, openAc, setMode, flowAnim, toggleFlow } = useWorkspaceUi();
   const { autoArrange } = usePcb();
 
   const convertToPcb = () => {
@@ -99,6 +99,14 @@ export function BoardToolbar() {
           title="Oscilloscope — capture and view the voltage waveforms"
         >
           ∿ Scope
+        </Button>
+        <Button
+          size="sm"
+          onClick={openAc}
+          disabled={circuit.instances.length === 0}
+          title="Bode plot — AC frequency response (gain & phase)"
+        >
+          ≈≈ Bode
         </Button>
         <Button
           size="sm"

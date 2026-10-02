@@ -87,6 +87,27 @@ class SweepResponse(BaseModel):
     series: list[SweepSeries]
 
 
+class AcRequest(BaseModel):
+    """Small-signal AC sweep over a log-frequency range for a Bode plot."""
+
+    circuit: Circuit
+    start_hz: float = 10.0
+    stop_hz: float = 1_000_000.0
+    points: int = 60
+
+
+class AcSeries(BaseModel):
+    id: str
+    label: str
+    magnitude_db: list[float]
+    phase_deg: list[float]
+
+
+class AcResponse(BaseModel):
+    freqs: list[float]
+    series: list[AcSeries]
+
+
 class SimulationRunRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

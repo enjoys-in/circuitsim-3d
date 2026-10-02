@@ -1,5 +1,6 @@
 import type {
   Circuit,
+  AcResult,
   SimulationOptions,
   SimulationResult,
   SweepResult,
@@ -34,5 +35,13 @@ export class SimulationService {
     request?: RequestOptions,
   ): Promise<SweepResult> {
     return this.http.post<SweepResult>("/simulation/sweep", { circuit, ...params }, request);
+  }
+
+  ac(
+    circuit: Circuit,
+    params: { start_hz: number; stop_hz: number; points: number },
+    request?: RequestOptions,
+  ): Promise<AcResult> {
+    return this.http.post<AcResult>("/simulation/ac", { circuit, ...params }, request);
   }
 }

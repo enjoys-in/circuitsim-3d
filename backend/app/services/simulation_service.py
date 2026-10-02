@@ -166,3 +166,16 @@ class SimulationService:
             "x_unit": _PARAM_UNIT.get(param, ""),
             "series": list(series.values()),
         }
+
+    def ac(
+        self,
+        circuit: Circuit,
+        *,
+        start_hz: float = 10.0,
+        stop_hz: float = 1_000_000.0,
+        points: int = 60,
+    ) -> dict[str, object]:
+        """Small-signal AC frequency sweep (Bode) over a log-frequency range."""
+        from app.engines.analog.ac import ac_sweep
+
+        return ac_sweep(circuit, start_hz, stop_hz, points)

@@ -11,6 +11,7 @@ import { LevelGallery } from "../examples/LevelGallery";
 import { ShortcutsCheatsheet } from "../shortcuts/ShortcutsCheatsheet";
 import { ScopeSheet } from "../scope/ScopeSheet";
 import { SweepSheet } from "../sweep/SweepSheet";
+import { AcSheet } from "../sweep/AcSheet";
 import { VerifySheet } from "../verify/VerifySheet";
 import { InspectorSkeleton } from "../inspector/InspectorSkeleton";
 import { PcbProvider } from "../pcb/PcbProvider";
@@ -75,6 +76,7 @@ function WorkspaceBody() {
       <LevelGallery />
       <VerifySheet />
       <SweepSheet />
+      <AcSheet />
       <ScopeSheet />
       <ShortcutsCheatsheet />
     </>

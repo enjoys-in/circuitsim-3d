@@ -123,3 +123,15 @@ export interface SweepResult {
   x_unit: string;
   series: SweepSeries[];
 }
+
+export interface AcSeriesResult {
+  id: string;
+  label: string;
+  magnitude_db: number[];
+  phase_deg: number[];
+}
+
+export interface AcResult {
+  freqs: number[];
+  series: AcSeriesResult[];
+}

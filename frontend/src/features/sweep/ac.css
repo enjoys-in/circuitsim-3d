@@ -1,0 +1,98 @@
+.ac {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ac__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ac__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ac__field input {
+  width: 110px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.ac-chart {
+  width: 100%;
+  height: auto;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.ac-grid {
+  stroke: #1b2838;
+  stroke-width: 1;
+}
+
+.ac-grid--zero {
+  stroke: #33465c;
+  stroke-dasharray: 4 4;
+}
+
+.ac-axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.ac-axis {
+  fill: var(--muted);
+  font-size: 9px;
+  font-family: var(--mono);
+}
+
+.ac-title {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.ac__legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ac__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ac__legend-item i {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.ac__error {
+  color: var(--bad, #f87171);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.ac__hint {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0;
+}

@@ -6,6 +6,8 @@ from fastapi.concurrency import run_in_threadpool
 from app.api.deps import BufferDep, SimulationServiceDep
 from app.core.exceptions import DomainError
 from app.schemas.simulation import (
+    AcRequest,
+    AcResponse,
     SimulationRequest,
     SimulationResult,
     SweepRequest,
@@ -76,3 +78,21 @@ async def sweep_circuit(
     except DomainError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     return SweepResponse(**outcome)
+
+
+@router.post("/ac", response_model=AcResponse)
+async def ac_circuit(
+    payload: AcRequest,
+    service: SimulationServiceDep,
+) -> AcResponse:
+    try:
+        outcome = await run_in_threadpool(
+            service.ac,
+            payload.circuit,
+            start_hz=payload.start_hz,
+            stop_hz=payload.stop_hz,
+            points=payload.points,
+        )
+    except DomainError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    return AcResponse(**outcome)
