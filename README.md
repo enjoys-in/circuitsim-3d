@@ -37,7 +37,9 @@ It grew into a full playground.
 | 3D board view |
 |---------------|
 | ![3D board view](docs/screenshots/07-pcb-3d.png) |
-
+| PCB Board View With Route |
+|---------------|
+| ![3D board view](docs/screenshots/08-pcb-routed.png) |
 ---
 
 ## Features
