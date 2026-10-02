@@ -31,7 +31,7 @@ real **three.js 3D** view — all in one app.
 ## Features
 
 ### Schematic & simulation
-- Drag parts from a 130+ component library, wire pins, and simulate live.
+- Drag parts from a 160+ component library, wire pins, and simulate live.
 - **Three engines**, auto-selected per circuit:
   - **Analog** — modified nodal analysis with Newton iteration (diodes, LEDs, BJTs,
     MOSFETs, regulators) and backward-Euler transients for RC/RL curves.
@@ -42,7 +42,18 @@ real **three.js 3D** view — all in one app.
 - **Code & Flash editor** — write MCU firmware in a built-in Monaco editor with one-click
   **Check** (server-side validation), **Flash**, **Download .py**, and **Reset to default**.
 - Live results: node values, waveforms, serial console, and playback scrubbing.
+- **Schematic undo/redo** (`Ctrl+Z` / `Ctrl+Y`), **net labels** (name a net; same-named
+  labels join without drawing a wire), and **snapshots** (local version history).
+- **Current-flow animation** and a **node-voltage heatmap** painted on the wires from the
+  live simulation; inspector **resistor colour-code** & **LED series-resistor** calculators.
 - Ready-made examples across analog, power, digital, **computer (ALU + CPUs)**, and MCU.
+
+### Analysis & verification
+- **AC analysis / Bode plot** — frequency response (gain dB + phase) from a complex-MNA engine.
+- **FFT spectrum** of analog waveforms and a **logic-analyzer** timing view with **hex bus lanes**.
+- **Serial plotter** — graph numeric `print()` output over time, beside the text monitor.
+- **Electrical Rule Check (ERC)** — floating pins, missing ground, and conflicting drivers.
+- **Verify** (truth-table / test vectors), **parameter sweep**, and an **oscilloscope** capture.
 
 ### Custom & flexible parts
 - Build your own component (name, pins, values) that can **behave like** a base part
@@ -74,6 +85,10 @@ real **three.js 3D** view — all in one app.
 - **Wire / Real** render modes (pads & traces vs. real component artwork).
 - **Connectors**: male/female headers and USB-A / USB-B / USB-C.
 - **Switches**: SPDT, slide, and 4-way DIP.
+- **Design-rule editor** — configurable DRC clearance; **interactive BOM** (click a part to
+  highlight its footprint on the board).
+- **Manufacturing export** — **Gerber** (RS-274X) + **Excellon** drill, zipped, plus a
+  **pick-and-place / centroid CSV** for assembly houses.
 
 ### 3D board view
 - A real **three.js** scene (board, copper pads, traces, extruded component bodies with
@@ -87,7 +102,9 @@ real **three.js 3D** view — all in one app.
   right from the panel. Stays gracefully disabled until a key is configured.
 
 ### Projects & export
-- Save / load projects; export BOM (CSV), netlist, and circuit JSON.
+- Save / load projects plus **local snapshots** (version history).
+- Export **BOM (CSV)**, **netlist**, **circuit JSON**, **SPICE `.cir` (import & export)**,
+  **Gerber + drill (.zip)**, **pick-and-place (.csv)**, schematic **SVG / PNG**, and **Print / PDF**.
 
 ---
 
