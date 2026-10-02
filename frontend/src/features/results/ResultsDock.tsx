@@ -6,6 +6,7 @@ import { useSimulation } from "../simulation/SimulationContext";
 import { OverviewPanel } from "./OverviewPanel";
 import { PlaybackBar } from "./PlaybackBar";
 import { SerialConsole } from "./SerialConsole";
+import { SerialPlotter } from "./SerialPlotter";
 import "./results.css";
 
 const WaveformPanel = lazy(() => import("./WaveformPanel"));
@@ -15,6 +16,7 @@ type TabKey = "overview" | "waves" | "serial";
 export default function ResultsDock() {
   const { result, error, stale, status, live, playback } = useSimulation();
   const [tab, setTab] = useState<TabKey>("overview");
+  const [serialView, setSerialView] = useState<"text" | "plot">("text");
   const [collapsed, setCollapsed] = useState(false);
   const updating = result !== null && (status === "running" || (stale && live));
 
@@ -58,7 +60,27 @@ export default function ResultsDock() {
           </Suspense>
         )}
         {tab === "waves" && !result && <OverviewPanel result={null} error={error} />}
-        {tab === "serial" && <SerialConsole log={result?.log ?? []} />}
+        {tab === "serial" && (
+          <div className="serial-wrap">
+            <div className="segmented serial-wrap__toggle">
+              {(["text", "plot"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={cx("segmented__item", serialView === v && "segmented__item--active")}
+                  onClick={() => setSerialView(v)}
+                >
+                  {v === "text" ? "Monitor" : "Plotter"}
+                </button>
+              ))}
+            </div>
+            {serialView === "text" ? (
+              <SerialConsole log={result?.log ?? []} />
+            ) : (
+              <SerialPlotter log={result?.log ?? []} />
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
