@@ -4,6 +4,7 @@ import { cx } from "../../shared/lib/format";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { AnalogChart } from "./charts/AnalogChart";
 import { groupBuses } from "./charts/buses";
+import { FftChart } from "./charts/FftChart";
 import { MAX_SERIES, SERIES_COLORS } from "./charts/palette";
 import { SeriesTable } from "./charts/SeriesTable";
 import { TimingDiagram } from "./charts/TimingDiagram";
@@ -21,7 +22,7 @@ function groupByUnit(series: Series[]): [string, Series[]][] {
 
 export default function WaveformPanel({ result, cursor }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<"chart" | "table">("chart");
+  const [view, setView] = useState<"chart" | "table" | "fft">("chart");
   const [busMode, setBusMode] = useState(true);
   const all = result.series;
   const colored = all.slice(0, MAX_SERIES);
@@ -36,8 +37,9 @@ export default function WaveformPanel({ result, cursor }: Props) {
 
   const visible = colored.filter((s) => !hidden.has(s.id));
   const digital = visible.filter((s) => s.kind === "digital");
+  const analog = visible.filter((s) => s.kind === "analog");
   const { buses, singles } = busMode ? groupBuses(digital) : { buses: [], singles: digital };
-  const analogGroups = groupByUnit(visible.filter((s) => s.kind === "analog"));
+  const analogGroups = groupByUnit(analog);
   const cursorIndex = cursor !== undefined && result.frames.length === result.time.length ? cursor : undefined;
   const toggle = (id: string) =>
     setHidden((prev) => {
@@ -66,14 +68,14 @@ export default function WaveformPanel({ result, cursor }: Props) {
           {all.length > MAX_SERIES && <span className="legend__more">+{all.length - MAX_SERIES} more in table</span>}
         </div>
         <div className="segmented">
-          {(["chart", "table"] as const).map((v) => (
+          {(["chart", "table", "fft"] as const).map((v) => (
             <button
               key={v}
               type="button"
               className={cx("segmented__item", view === v && "segmented__item--active")}
               onClick={() => setView(v)}
             >
-              {v === "chart" ? "Chart" : "Table"}
+              {v === "chart" ? "Chart" : v === "table" ? "Table" : "FFT"}
             </button>
           ))}          {view === "chart" && digital.length > 1 && (
             <button
@@ -88,6 +90,8 @@ export default function WaveformPanel({ result, cursor }: Props) {
       </div>
       {view === "table" ? (
         <SeriesTable time={result.time} timeUnit={result.time_unit} series={all} />
+      ) : view === "fft" ? (
+        <FftChart time={result.time} timeUnit={result.time_unit} series={analog} colorOf={colorOf} />
       ) : (
         <>
           {analogGroups.map(([unit, series]) => (
