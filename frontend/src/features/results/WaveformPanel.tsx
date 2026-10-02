@@ -3,6 +3,7 @@ import type { Series, SimulationOutput } from "../../domain";
 import { cx } from "../../shared/lib/format";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { AnalogChart } from "./charts/AnalogChart";
+import { groupBuses } from "./charts/buses";
 import { MAX_SERIES, SERIES_COLORS } from "./charts/palette";
 import { SeriesTable } from "./charts/SeriesTable";
 import { TimingDiagram } from "./charts/TimingDiagram";
@@ -21,6 +22,7 @@ function groupByUnit(series: Series[]): [string, Series[]][] {
 export default function WaveformPanel({ result, cursor }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"chart" | "table">("chart");
+  const [busMode, setBusMode] = useState(true);
   const all = result.series;
   const colored = all.slice(0, MAX_SERIES);
   const colorOf = useMemo(() => {
@@ -34,6 +36,7 @@ export default function WaveformPanel({ result, cursor }: Props) {
 
   const visible = colored.filter((s) => !hidden.has(s.id));
   const digital = visible.filter((s) => s.kind === "digital");
+  const { buses, singles } = busMode ? groupBuses(digital) : { buses: [], singles: digital };
   const analogGroups = groupByUnit(visible.filter((s) => s.kind === "analog"));
   const cursorIndex = cursor !== undefined && result.frames.length === result.time.length ? cursor : undefined;
   const toggle = (id: string) =>
@@ -72,8 +75,16 @@ export default function WaveformPanel({ result, cursor }: Props) {
             >
               {v === "chart" ? "Chart" : "Table"}
             </button>
-          ))}
-        </div>
+          ))}          {view === "chart" && digital.length > 1 && (
+            <button
+              type="button"
+              className={cx("segmented__item", busMode && "segmented__item--active")}
+              onClick={() => setBusMode((v) => !v)}
+              title="Group D0,D1… bits into hex bus lanes"
+            >
+              Bus
+            </button>
+          )}        </div>
       </div>
       {view === "table" ? (
         <SeriesTable time={result.time} timeUnit={result.time_unit} series={all} />
@@ -93,7 +104,8 @@ export default function WaveformPanel({ result, cursor }: Props) {
             <TimingDiagram
               time={result.time}
               timeUnit={result.time_unit}
-              series={digital}
+              series={singles}
+              buses={buses}
               colorOf={colorOf}
               cursor={cursorIndex}
             />

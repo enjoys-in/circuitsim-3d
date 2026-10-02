@@ -343,3 +343,10 @@
   font-family: var(--mono);
   color: var(--muted);
 }
+
+/* Logic-analyzer bus lanes (grouped D0,D1… bits shown as hex) */
+.chart__bus-rail {
+  fill: none;
+  stroke-width: 1.4;
+  opacity: 0.85;
+}
