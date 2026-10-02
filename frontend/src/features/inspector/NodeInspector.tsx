@@ -10,6 +10,7 @@ import { useLiveInstance } from "../simulation/SimulationContext";
 import { LiveReadout } from "./LiveReadout";
 import { ParamEditor } from "./ParamEditor";
 import { describeParams } from "./paramSchema";
+import { CalculatorSection } from "./calculators/CalculatorSection";
 
 export function NodeInspector({ node }: { node: PartNodeType }) {
   const { def, label, params } = node.data;
@@ -89,6 +90,8 @@ export function NodeInspector({ node }: { node: PartNodeType }) {
           />
         ))}
       </section>
+
+      <CalculatorSection node={node} />
 
       <section className="inspector__section">
         <h4 className="panel-heading">Live</h4>

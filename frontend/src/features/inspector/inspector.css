@@ -784,3 +784,50 @@
 .code-editor__status--info { color: #93c5fd; }
 .code-editor__status--busy { color: var(--muted); }
 .code-editor__status--error { color: #fca5a5; }
+
+/* Resistor / LED calculators */
+.calc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.calc__resistor {
+  width: 100%;
+  height: auto;
+}
+.calc__field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.calc__field span {
+  color: var(--muted);
+}
+.calc__field b {
+  font-family: var(--mono);
+}
+.calc__field--accent b {
+  color: var(--accent);
+}
+.calc__input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.calc__input input {
+  width: 92px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+}
