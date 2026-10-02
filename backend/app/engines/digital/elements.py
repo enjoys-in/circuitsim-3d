@@ -437,88 +437,6 @@ class Ram(Sequential):
         return {"words": len(self._mem)}
 
 
-class Cpu(Sequential):
-    """A self-contained accumulator computer: each step fetches one program byte
-    (high nibble = opcode, low nibble = operand) and updates the accumulator.
-    ops: 0 ADD, 1 SUB, 2 AND, 3 OR, 4 XOR, 5 LOAD, 6 SHL, 7 HALT. Runs on a wired
-    clock, or free-runs one instruction per tick when `clk` is left unwired."""
-
-    def __init__(self, instance: ComponentInstance, width: int = 4, slots: int = 16) -> None:
-        super().__init__(instance)
-        self._w = width
-        self._mask = (1 << width) - 1
-        self._slots = slots
-        self.inputs = ("clk", "reset")
-        self.outputs = (
-            *(f"q{i}" for i in range(width)),
-            *(f"pc{i}" for i in range(4)),
-            "zero",
-            "halt",
-        )
-        prog = instance.params.get("data") or instance.params.get("program") or []
-        self._prog = [int(x) for x in prog] if isinstance(prog, list) else []
-        self._acc = 0
-        self._pc = 0
-        self._halt = 0
-        self._tick = -1
-        self._fired_tick = -1
-        self._last_clk: Signal = None
-
-    def drive(self, tick: int) -> Pins:
-        self._tick = tick
-        out: Pins = {f"q{i}": (self._acc >> i) & 1 for i in range(self._w)}
-        for i in range(4):
-            out[f"pc{i}"] = (self._pc >> i) & 1
-        out["zero"] = int(self._acc == 0)
-        out["halt"] = self._halt
-        return out
-
-    def rising(self, pins: Pins) -> bool:
-        clk = pins.get("clk")
-        if clk is None:  # no external clock wired -> free-run one instruction per tick
-            return self._tick != self._fired_tick
-        return self._last_clk == 0 and clk == 1
-
-    def remember(self, pins: Pins) -> None:
-        self._last_clk = pins.get("clk")
-
-    def next_state(self, pins: Pins) -> tuple[int, int, int]:
-        if pins.get("reset"):
-            return (0, 0, 0)
-        if self._halt:
-            return (self._acc, self._pc, 1)
-        word = self._prog[self._pc] if 0 <= self._pc < len(self._prog) else 0
-        op = (word >> self._w) & 0x7
-        arg = word & self._mask
-        acc, halt = self._exec(op, arg)
-        return (acc & self._mask, (self._pc + 1) % self._slots, halt)
-
-    def apply(self, value: Any) -> None:
-        self._acc, self._pc, self._halt = value
-        self._fired_tick = self._tick
-
-    def _exec(self, op: int, arg: int) -> tuple[int, int]:
-        a = self._acc
-        if op == 1:
-            return (a - arg, 0)
-        if op == 2:
-            return (a & arg, 0)
-        if op == 3:
-            return (a | arg, 0)
-        if op == 4:
-            return (a ^ arg, 0)
-        if op == 5:
-            return (arg, 0)
-        if op == 6:
-            return (a << 1, 0)
-        if op == 7:
-            return (a, 1)
-        return (a + arg, 0)  # op 0 = ADD
-
-    def state(self) -> dict[str, Any]:
-        return {"value": self._acc, "pc": self._pc, "on": bool(self._acc), "halt": bool(self._halt)}
-
-
 _AB = ("a", "b")
 
 _GATES: dict[str, tuple[tuple[str, ...], Callable[[list[int]], int]]] = {
@@ -609,7 +527,6 @@ _FACTORIES: dict[str, Callable[[ComponentInstance], LogicElement]] = {
     "alu8": lambda inst: Alu(inst, 8),
     "rom16": lambda inst: Rom(inst, 4, 4),
     "ram16": lambda inst: Ram(inst, 4, 4),
-    "cpu": lambda inst: Cpu(inst),
     # DC rails double as constant logic levels so ICs can be tied to VCC / GND.
     "ground": lambda inst: Rail(inst, {"gnd": 0}),
     "dc_supply": lambda inst: Rail(inst, {"+": 1, "-": 0}),

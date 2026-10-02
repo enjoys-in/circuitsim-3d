@@ -380,25 +380,4 @@ LOGIC = [
         description="Async read; writes D0-D3 to the address on the clock edge when WE is high",
         tags=["digital", "cpu"],
     ),
-    component(
-        "cpu",
-        "4-bit Computer (CPU)",
-        C.LOGIC,
-        pins(
-            ("clk", P.INPUT),
-            ("reset", P.INPUT),
-            *((f"q{i}", P.OUTPUT) for i in range(4)),
-            *((f"pc{i}", P.OUTPUT) for i in range(4)),
-            ("zero", P.OUTPUT),
-            ("halt", P.OUTPUT),
-        ),
-        subcategory="cpu",
-        description=(
-            "Self-contained accumulator computer. Runs the program in 'data' (one byte per step: "
-            "high nibble = opcode, low nibble = operand). ops: 0 ADD, 1 SUB, 2 AND, 3 OR, 4 XOR, "
-            "5 LOAD, 6 SHL, 7 HALT. q = accumulator, pc = program counter. Free-runs if clk is unwired."
-        ),
-        default_params={"data": [83, 5, 18, 96, 41, 49, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
-        tags=["digital", "cpu", "computer"],
-    ),
 ]

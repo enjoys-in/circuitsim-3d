@@ -17,8 +17,13 @@ export class SimulationService {
   verify(
     circuit: Circuit,
     vectors: VerifyVector[],
+    options?: { ticks?: number },
     request?: RequestOptions,
   ): Promise<VerifyResponse> {
-    return this.http.post<VerifyResponse>("/simulation/verify", { circuit, vectors }, request);
+    return this.http.post<VerifyResponse>(
+      "/simulation/verify",
+      { circuit, vectors, options },
+      request,
+    );
   }
 }

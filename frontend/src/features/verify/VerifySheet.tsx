@@ -63,18 +63,30 @@ export function VerifySheet() {
     () => `${inputs.map((p) => p.id).join(",")}|${outputs.map((p) => p.id).join(",")}`,
     [inputs, outputs],
   );
+  // Clocked circuits (a CPU, counter, register…) must run for several ticks before checking.
+  const clocked = useMemo(
+    () =>
+      simCircuit.instances.some(
+        (i) =>
+          i.component_key === "clock" ||
+          /^(counter|register|shift|ram|dff|tff|jkff|srff)/.test(i.component_key),
+      ),
+    [simCircuit],
+  );
 
   const [rows, setRows] = useState<EditRow[]>([]);
+  const [ticks, setTicks] = useState(1);
   const [result, setResult] = useState<VerifyResponse | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset the vector table whenever the set of input/output ports changes.
   useEffect(() => {
-    setRows(inputs.length ? [blankRow(inputs)] : []);
+    setRows([blankRow(inputs)]);
+    setTicks(clocked ? 24 : 1);
     setResult(null);
     setError(null);
-  }, [portKey, inputs]);
+  }, [portKey, inputs, clocked]);
 
   const editRows = (next: EditRow[]) => {
     setRows(next);
@@ -116,7 +128,7 @@ export function VerifySheet() {
         inputs: row.inputs,
         expected: Object.keys(row.expected).length ? row.expected : null,
       }));
-      const response = await simulationService.verify(simCircuit, vectors);
+      const response = await simulationService.verify(simCircuit, vectors, { ticks });
       setResult(response);
     } catch (err) {
       setError(errorMessage(err, "Verification failed"));
@@ -139,31 +151,44 @@ export function VerifySheet() {
       open={verifyOpen}
       title="Verify circuit"
       onClose={closeVerify}
-      actions={<span className="sheet__soon">truth table / test vectors</span>}
+      actions={<span className="sheet__soon">truth table · clocked run</span>}
     >
-      {inputs.length === 0 ? (
+      {inputs.length === 0 && outputs.length === 0 ? (
         <EmptyState title="Nothing to verify yet">
-          Add <code>input</code> parts (and <code>output</code> probes on the signals you care about),
-          then reopen Verify to build a truth table.
+          Add <code>output</code> probes on the signals you want to check (and <code>input</code> parts
+          for truth-table tests), then reopen Verify.
         </EmptyState>
       ) : (
         <div className="verify">
           <div className="verify__bar">
             <div className="verify__actions">
-              <Button size="sm" onClick={addRow}>+ Row</Button>
+              <Button size="sm" onClick={addRow} disabled={inputs.length === 0}>+ Row</Button>
               <Button
                 size="sm"
                 onClick={sweep}
-                disabled={inputs.length > SWEEP_LIMIT}
+                disabled={inputs.length === 0 || inputs.length > SWEEP_LIMIT}
                 title={
                   inputs.length > SWEEP_LIMIT
                     ? `Too many inputs to sweep (${inputs.length} > ${SWEEP_LIMIT})`
                     : `Generate all ${1 << inputs.length} input combinations`
                 }
               >
-                Sweep all ({inputs.length > SWEEP_LIMIT ? "—" : 1 << inputs.length})
+                Sweep all ({inputs.length === 0 || inputs.length > SWEEP_LIMIT ? "—" : 1 << inputs.length})
               </Button>
               <Button size="sm" onClick={clearRows}>Clear</Button>
+              <label className="verify__ticks" title="Clock ticks to run before checking the outputs">
+                Clock ticks
+                <input
+                  type="number"
+                  min={1}
+                  max={600}
+                  value={ticks}
+                  onChange={(e) => {
+                    setTicks(Math.max(1, Math.min(600, Number(e.target.value) || 1)));
+                    setResult(null);
+                  }}
+                />
+              </label>
             </div>
             <div className="verify__run">
               {summary && <span className={`verify__summary verify__summary--${summary.tone}`}>{summary.text}</span>}
@@ -177,6 +202,13 @@ export function VerifySheet() {
             <p className="verify__hint">
               No <code>output</code> probes found — add them on the nets you want to check so results can be
               compared.
+            </p>
+          )}
+          {clocked && (
+            <p className="verify__hint">
+              Clocked circuit — it runs for <strong>{ticks}</strong> clock tick{ticks === 1 ? "" : "s"} before
+              the output probes are checked. Raise “Clock ticks” to give a CPU enough cycles to finish its
+              program.
             </p>
           )}
           {error && <p className="verify__error">{error}</p>}
