@@ -47,6 +47,11 @@ export function ExportMenu() {
     });
     downloadBlob(`circuitsim-gerbers-${stamp()}.zip`, zipFiles(files));
   };
+  const downloadCentroid = async () => {
+    const { buildCentroid } = await import("./centroid");
+    const csv = buildCentroid({ circuit, catalog: byKey, placements: pcb.placements, board: pcb.board });
+    downloadText(`circuitsim-pick-and-place-${stamp()}.csv`, csv, "text/csv");
+  };
   const shareLink = async () => {
     const url = buildShareUrl(circuit);
     try {
@@ -96,6 +101,9 @@ export function ExportMenu() {
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadGerbers()}>
               Gerbers (.zip)
+            </Button>
+            <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadCentroid()}>
+              Pick &amp; place (.csv)
             </Button>
           </div>
 
