@@ -3,7 +3,8 @@ import { Button } from "../../shared/ui/Button";
 import { Sheet } from "../../shared/ui/Sheet";
 import { useCircuitGraph } from "../board/CircuitGraphContext";
 import { useCatalog } from "../catalog/CatalogContext";
-import { bomToCsv, buildBom, buildNetlist, downloadText } from "./exporters";
+import { buildShareUrl } from "../share/shareCircuit";
+import { bomToCsv, buildBom, buildNetlist, downloadBlob, downloadText } from "./exporters";
 import "./export.css";
 
 function stamp(): string {
@@ -12,6 +13,7 @@ function stamp(): string {
 
 export function ExportMenu() {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { circuit, nodes, edges } = useCircuitGraph();
   const { byKey } = useCatalog();
   const rows = useMemo(() => (open ? buildBom(circuit, byKey) : []), [open, circuit, byKey]);
@@ -24,6 +26,21 @@ export function ExportMenu() {
   const downloadSvg = async () => {
     const { buildSchematicSvg } = await import("./schematicSvg");
     downloadText(`circuitsim-schematic-${stamp()}.svg`, buildSchematicSvg(nodes, edges), "image/svg+xml");
+  };
+  const downloadPng = async () => {
+    const { buildSchematicSvg } = await import("./schematicSvg");
+    const { svgToPngBlob } = await import("./toPng");
+    downloadBlob(`circuitsim-schematic-${stamp()}.png`, await svgToPngBlob(buildSchematicSvg(nodes, edges)));
+  };
+  const shareLink = async () => {
+    const url = buildShareUrl(circuit);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.prompt("Copy this share link:", url);
+    }
   };
 
   return (
@@ -39,7 +56,15 @@ export function ExportMenu() {
       >
         <div className="export">
           <div className="export__actions">
-            <Button variant="primary" size="sm" disabled={rows.length === 0} onClick={downloadBom}>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={circuit.instances.length === 0}
+              onClick={() => void shareLink()}
+            >
+              {copied ? "Link copied ✓" : "🔗 Share link"}
+            </Button>
+            <Button size="sm" disabled={rows.length === 0} onClick={downloadBom}>
               BOM (.csv)
             </Button>
             <Button size="sm" disabled={circuit.nets.length === 0} onClick={downloadNetlist}>
@@ -47,6 +72,9 @@ export function ExportMenu() {
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadSvg()}>
               Schematic (.svg)
+            </Button>
+            <Button size="sm" disabled={circuit.instances.length === 0} onClick={() => void downloadPng()}>
+              Schematic (.png)
             </Button>
             <Button size="sm" disabled={circuit.instances.length === 0} onClick={downloadJson}>
               Circuit (.json)

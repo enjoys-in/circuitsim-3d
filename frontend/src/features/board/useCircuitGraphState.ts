@@ -18,6 +18,7 @@ import { nextDesignator } from "./model/designators";
 import { createPartNode } from "./model/nodeFactory";
 import { pickWireColor } from "./model/wireColors";
 import type { PartNodeType, WireEdgeType } from "./nodes/types";
+import { clearShareHash, readSharedCircuit } from "../share/shareCircuit";
 import { useGraphActions } from "./useGraphActions";
 
 const uid = (prefix: string) => `${prefix}${Math.random().toString(36).slice(2, 9)}`;
@@ -151,6 +152,15 @@ export function useCircuitGraphState(catalog: ReadonlyMap<string, ComponentDef>)
   useEffect(() => {
     if (restored.current || catalog.size === 0) return;
     restored.current = true;
+    // A circuit shared via the URL (#c=...) takes priority over the saved one.
+    const shared = readSharedCircuit();
+    if (shared?.instances?.length) {
+      const graph = circuitToGraph(shared, catalog);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      clearShareHash();
+      return;
+    }
     try {
       const raw = window.localStorage.getItem(CIRCUIT_STORAGE_KEY);
       const saved = raw ? (JSON.parse(raw) as Circuit) : null;
